@@ -603,6 +603,22 @@ namespace rubinius {
     return set_ivar(state, sym, val);
   }
 
+  Object* Object::set_secure_context_prim(STATE, Object* val) {
+    check_frozen(state);
+    set_secure_context(1);
+
+    std::cerr << "[set_secure_context_prim] Set secure context\n";
+    return set_ivar(state, G(sym_secure_context), val);
+  }
+
+  Object* Object::get_secure_context_prim(STATE) {
+    if(! is_secure_context_p()) {
+      return Primitives::failure();
+    }
+
+    return get_ivar(state, G(sym_secure_context));
+  }
+
   Object* Object::set_ivar(STATE, Symbol* sym, Object* val) {
     /* Implements the external ivars table for objects that don't
        have their own space for ivars. */
@@ -818,6 +834,10 @@ namespace rubinius {
 
   Object* Object::untrusted_p(STATE) {
     return RBOOL(is_untrusted_p());
+  }
+
+  Object* Object::secure_context_p(STATE) {
+    return RBOOL(is_secure_context_p());
   }
 
   TypeInfo* Object::type_info(STATE) const {

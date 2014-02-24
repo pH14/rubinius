@@ -206,6 +206,14 @@ namespace rubinius {
     // Rubinius.primitive+ :object_equal
     Object*   equal(STATE, Object* other);
 
+    /**
+    * Ruby #secure_context?
+    *
+    * Returns true if a security context has been set
+    */
+    // Rubinius.primitive+ :object_secure_context_p
+    Object*   secure_context_p(STATE);
+
     /** Sets the frozen flag. Rubinius does NOT currently support freezing. */
     // Rubinius.primitive :object_freeze
     Object*   freeze(STATE);
@@ -227,6 +235,14 @@ namespace rubinius {
 
     // A version that only attempts to find +sym+ in the ivars slot
     Object*   get_table_ivar(STATE, Symbol* sym);
+
+    /*
+    * Ruby #secure_context
+    *
+    * Returns the secure context object
+    */
+    // Rubinius.primitive+ :object_secure_context
+    Object*   get_secure_context_prim(STATE);
 
     // Rubinius.primitive :object_del_ivar
     Object*   del_ivar(STATE, Symbol* sym);
@@ -306,6 +322,15 @@ namespace rubinius {
      */
     // Rubinius.primitive :object_set_ivar
     Object*   set_ivar_prim(STATE, Symbol* sym, Object* val);
+
+    /**
+     *  Ruby #secure_context=
+     *
+     *  Store the given object as the security context in
+     *  the instance variable by the given identifier.
+     */
+    // Rubinius.primitive :object_set_secure_context
+    Object*   set_secure_context_prim(STATE, Object* val);
 
     Object*   set_ivar(STATE, Symbol* sym, Object* val);
 
@@ -398,7 +423,6 @@ namespace rubinius {
 
     /* ivars_ from ObjectHeader. */
     attr_accessor(ivars, Object);
-
 
   public:   /* TypeInfo */
 

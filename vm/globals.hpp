@@ -68,6 +68,9 @@ namespace rubinius {
     TypedRoot<Symbol*> sym_coerce_to_array, sym_to_ary, sym_to_hash;
     TypedRoot<Symbol*> sym_allocation_site;
 
+    /* Security Context symbol */
+    TypedRoot<Symbol*> sym_secure_context;
+
     TypedRoot<Class*> exception;
     TypedRoot<Class*> exc_arg, exc_segfault;
     TypedRoot<Class*> exc_loe, exc_type, exc_rex, exc_rte;

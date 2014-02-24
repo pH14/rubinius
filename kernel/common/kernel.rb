@@ -444,6 +444,13 @@ module Kernel
     instance_variable_set sym, value
   end
 
+  def secure_context=(value)
+    Rubinius.primitive :object_set_secure_context
+    
+    sym = Rubinius::Type.ivar_validate sym
+    instance_variable_set sym, value
+  end
+
   alias_method :__instance_variable_set__, :instance_variable_set
 
   def instance_variables

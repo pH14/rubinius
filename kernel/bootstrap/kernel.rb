@@ -4,6 +4,16 @@ module Kernel
     raise PrimitiveFailure, "Kernel#equal? primitive failed"
   end
 
+  def secure_context
+    Rubinius.primitive :object_secure_context
+    raise ::PrimitiveFailure, "Kernel#secure_context primitive failed"
+  end
+
+  def secure_context?
+    Rubinius.primitive :object_secure_context_p
+    raise ::PrimitiveFailure, "Kernel#secure_context? primitive failed"
+  end
+
   alias_method :eql?, :equal?
   alias_method :==,  :equal?
   alias_method :===, :equal?

@@ -149,6 +149,7 @@ Object* const cUndef = reinterpret_cast<Object*>(0x22L);
 #define OBJECT_FLAGS_TAINTED        25
 #define OBJECT_FLAGS_UNTRUSTED      26
 #define OBJECT_FLAGS_LOCK_CONTENDED 27
+#define OBJECT_FLAGS_SECURE_CONTEXT 28
 
   struct ObjectFlags {
     object_type  obj_type        : 8;
@@ -167,7 +168,8 @@ Object* const cUndef = reinterpret_cast<Object*>(0x22L);
     unsigned int Tainted         : 1;
     unsigned int Untrusted       : 1;
     unsigned int LockContended   : 1;
-    unsigned int unused          : 4;
+    unsigned int SecureContext   : 1;
+    unsigned int unused          : 3;
 
     uint32_t aux_word;
   };
@@ -552,6 +554,15 @@ Object* const cUndef = reinterpret_cast<Object*>(0x22L);
     }
 
     void set_untrusted(int val=1);
+
+    bool is_secure_context_p() const {
+      if(reference_p()) {
+        return flags().SecureContext == 1;
+      }
+      return false;
+    }
+
+    void set_secure_context(int val=1);
 
     uint32_t object_id(STATE) const {
       // Pull this out into a local so that we don't see any concurrent
