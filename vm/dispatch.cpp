@@ -14,6 +14,7 @@ namespace rubinius {
   Object* Dispatch::send(STATE, CallFrame* call_frame, Arguments& args,
                          MethodMissingReason reason)
   {
+    // std::cout << "[vm/Dispatch#send-no-args] received method " << args.recv()->to_string(state, false) << "\n";
     LookupData lookup(args.recv(), args.recv()->lookup_begin(state), G(sym_protected));
 
     return send(state, call_frame, lookup, args, reason);
@@ -23,6 +24,7 @@ namespace rubinius {
                          Arguments& args, MethodMissingReason reason)
   {
     Symbol* original_name = name;
+    // std::cout << "[vm/Dispatch#send] received method " << original_name->cpp_str(state) << " on object " << args.recv()->to_string(state, false) <<" \n";
 
     if(!resolve(state, name, lookup)) {
       state->vm()->set_method_missing_reason(reason);
@@ -50,6 +52,7 @@ namespace rubinius {
   }
 
   bool Dispatch::resolve(STATE, Symbol* name, LookupData& lookup) {
+    // std::cout << "[vm/Dispatch#resolve] received symbol " << name->cpp_str(state) << "\n";
     return GlobalCache::resolve(state, name, *this, lookup);
   }
 }

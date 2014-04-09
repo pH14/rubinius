@@ -416,6 +416,13 @@ namespace rubinius {
      */
     void check_frozen(STATE);
 
+    /**
+     *
+     *
+     * Has the secure context intercept a method's arguments
+     */
+     void intercept_args(STATE, CallFrame* call_frame, Executable* exec, Module* mod, Arguments& args);
+
   public:   /* accessors */
 
     /* klass_ from ObjectHeader. */

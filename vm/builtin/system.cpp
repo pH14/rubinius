@@ -1215,6 +1215,7 @@ namespace rubinius {
   }
 
   Tuple* System::vm_find_method(STATE, Object* recv, Symbol* name) {
+    // std::cout << "[vm/system.cpp#vm_find_method] " << name->to_string(state) << "\n";
     return find_method(state, recv->lookup_begin(state), name, G(sym_private));
   }
 

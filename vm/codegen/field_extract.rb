@@ -119,6 +119,11 @@ class CPPPrimitive < BasicPrimitive
     str << "  #{@type}* recv = try_as<#{@type}>(args.recv());\n"
     str << "  if(unlikely(recv == NULL)) goto fail;\n"
 
+    str << "  if(unlikely(recv->is_secure_context_p())) {\n"
+    str << "    Object* recv_secure_context = recv->get_secure_context_prim(state);\n"
+    str << "    recv_secure_context->intercept_args(state, call_frame, exec, mod, args);\n"
+    str << "  }\n"
+
     if @raw
       str << "\n"
       str << "  try {\n"

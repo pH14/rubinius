@@ -6,6 +6,7 @@
 #include "machine_code.hpp"
 #include "object_utils.hpp"
 #include "arguments.hpp"
+#include "exception.hpp"
 
 namespace rubinius {
 
@@ -111,7 +112,9 @@ namespace rubinius {
     Object* execute(STATE, CallFrame* call_frame, Arguments& args) {
       Object* const recv = args.recv();
 
-      if(recv->is_secure_context_p() && args.total() > 0) {
+      // Need to handle case where there are no arguments, but there is a block...
+
+      if(recv->is_secure_context_p() && ((args.total() > 0) || args.block() != cNil)) {
         std::cerr << "[vm/CallSite#execute] Receiver has a secure context for f'n: " << args.name()->cpp_str(state) << "\n";
         std::cerr << "[vm/CallSite#execute] Number of args before call is: " << args.total() << "\n";
 
@@ -133,30 +136,52 @@ namespace rubinius {
           args.set_recv(recv);
         } else {
           Object* const original_recv = recv;
-          Array* ary = Array::create(state, args.total());
-          Array* each_hooked_arg = try_as<Array>(hooked_args);
+          Arguments updated_args(args.name());
 
-          std::cerr << "[vm/CallSite#execute] Number of hooked args is: " << each_hooked_arg->size() << "\n";
+          bool block_given = (args.block() != cNil);
+          std::cerr << "[vm/CallSite#execute] Block_given? " << block_given << "\n";
 
-          size_t args_range = each_hooked_arg->size();
-          bool block_given = args.block() != NULL;
+          if(args.total() > 0) {
+            Array* each_hooked_arg;
 
-          if (!block_given) {
-            args_range -= 1;
+            if((each_hooked_arg = try_as<Array>(hooked_args))) {
+              std::cerr << "[vm/CallSite#execute] Number of hooked args is: " << each_hooked_arg->size() << "\n";
+
+              size_t args_range = each_hooked_arg->size();
+
+              // The secure context returns (arg, arg, arg, block) if it's supposed to return a block
+              if (block_given) {
+                args_range--;
+              }
+
+              Array* ary = Array::create(state, args_range);
+
+              std::cerr << "[vm/CallSite#execute] Will be adding in: " << args_range << " arguments\n";
+
+              for(size_t i = 0; i < args_range; i++) {
+                std::cerr << "[vm/CallSite#execute] Hooked arg is " << each_hooked_arg->get(state,i)->to_string(state) << "\n";
+                ary->set(state, i, each_hooked_arg->get(state, i));
+              }
+
+              updated_args.use_array(ary);
+
+              if (block_given) {
+                std::cerr << "[vm/CallSite#execute] Original args does have block. Setting it on new args.\n";
+                updated_args.set_block(each_hooked_arg->get(state, each_hooked_arg->size() - 1));
+              }
+            } else { // if try_as fails
+              Exception::argument_error(state, "secure context returned too few arguments");
+            }
+          } else {
+            if (block_given) {
+              std::cerr << "[vm/CallSite#execute] Original args does have block, but no other args.\n";
+              updated_args.set_block(hooked_args);
+            } else {
+              std::cerr << "[vm/CallSite#execute] Logic is broken.\n";
+            }
           }
 
-          for(size_t i = 0; i < args_range; i++) {
-            std::cerr << "[vm/CallSite#execute] Hooked arg is " << each_hooked_arg->get(state,i)->to_string(state) << "\n";
-            ary->set(state, i, each_hooked_arg->get(state, i));
-          }
-
-          Arguments updated_args(args.name(), ary);
           updated_args.set_recv(original_recv);
-
-          if (block_given) {
-            std::cerr << "[vm/CallSite#execute] Original args does have block. Setting it on new args.\n";
-            updated_args.set_block(each_hooked_arg->get(state, each_hooked_arg->size() - 1));
-          }
 
           std::cerr << "[vm/CallSite#execute] Now calling original.\n";
           return (*executor_)(state, this, call_frame, updated_args);

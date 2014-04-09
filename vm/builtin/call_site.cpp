@@ -67,8 +67,13 @@ namespace rubinius {
   Object* CallSite::empty_cache(STATE, CallSite* call_site, CallFrame* call_frame,
                                    Arguments& args)
   {
-    Object* const recv = args.recv();
+    Object* recv = args.recv();
     Class*  const recv_class  = recv->direct_class(state);
+
+    // if(recv->is_secure_context_p()) {
+    //   // std::cout << "[vm/CallSite#empty_cache] Receiver has a secure context.\n";
+    //   recv = recv->get_secure_context_prim(state);
+    // }
 
     LookupData lookup(call_frame->self(), recv->lookup_begin(state), G(sym_public));
     Dispatch dis(call_site->name());
@@ -85,15 +90,21 @@ namespace rubinius {
     Executable* meth = dis.method;
     Module* mod = dis.module;
 
+    // std::cout << "[vm/CallSite#empty_cache] Handling symbol " << call_site->name()->cpp_str(state) << "\n";
+    Object* res;
+
     if(meth->custom_call_site_p()) {
       CallSiteInformation info(call_site->executable(), call_site->ip());
       state->set_call_site_information(&info);
-      Object* res = meth->execute(state, call_frame, meth, mod, args);
+      res = meth->execute(state, call_frame, meth, mod, args);
       state->set_call_site_information(NULL);
-      return res;
+      // return res;
     } else {
-      return meth->execute(state, call_frame, meth, mod, args);
+      res = meth->execute(state, call_frame, meth, mod, args);
     }
+
+    // std::cout << "[vm/CallSite#empty_cache] " << res->to_s(state, false) << "\n";
+    return res;
   }
 
   Object* CallSite::empty_cache_private(STATE, CallSite* call_site, CallFrame* call_frame,
