@@ -122,6 +122,10 @@ namespace rubinius {
       arguments_[0] = obj;
     }
 
+    void use_arguments(Object** objs) {
+      arguments_ = objs;
+    }
+
     void use_array(Array* ary) {
       use_tuple(ary->tuple(), ary->size(), ary->offset());
     }
