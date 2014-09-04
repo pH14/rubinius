@@ -1,5 +1,5 @@
 module SecureContextSpecs
-	class SecureContext
+	class SecureContext < BasicObject
 		attr_accessor :tainted
 		attr_accessor :return_args
 		attr_accessor :return_block
@@ -71,6 +71,14 @@ module SecureContextSpecs
 
 		def add(x, y)
 			x + y
+		end
+
+		def no_args_method
+			10
+		end
+
+		def no_args_method_with_block
+			yield
 		end
 	end
 end
