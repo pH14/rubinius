@@ -81,8 +81,10 @@ namespace rubinius {
     if(!dis.resolve(state, call_site->name(), lookup)) {
       if(!lookup_method_missing(state, call_frame, args,
           dis, call_frame->self(), recv->lookup_begin(state))) {
+        std::cerr << "[vm/CallSite#empty_cache] Couldn't look up method missing\n";// << res->to_s(state, false) << "\n";
         return NULL;
       }
+      // std::cerr << "[vm/CallSite#empty_cache] Couldn't resolve with dispatch\n";// << res->to_s(state, false) << "\n";
     }
 
     call_site->update(state, recv_class, dis);

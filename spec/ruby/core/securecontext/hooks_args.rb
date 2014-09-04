@@ -2,6 +2,29 @@ require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Secure context" do
+	it "hooks methods that take no arguments" do
+		x = SecureContextSpecs::TestObject.new
+		x.secure_context = SecureContextSpecs::SecureContext.new "wasn't called"
+
+		x.secure_context.define_singleton_method(:no_args_method) do
+			@return_args = "was called"	
+		end
+
+		x.no_args_method
+		x.secure_context.return_args.should == "was called"
+	end
+
+	it "hooks methods that takes no arguments but gives a block" do
+		x = SecureContextSpecs::TestObject.new
+		x.secure_context = SecureContextSpecs::SecureContext.new
+
+		x.secure_context.define_singleton_method(:no_args_method_with_block) do
+			Proc.new { 10 }
+		end
+
+		x.no_args_method_with_block.should == 10
+	end
+
 	it "returns just one value without splat" do 
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new "world"
