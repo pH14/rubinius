@@ -6,7 +6,7 @@ describe "Secure context" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new "wasn't called"
 
-		x.secure_context.define_singleton_method(:no_args_method) do
+		x.secure_context.define_singleton_method(:before_no_args_method) do
 			@return_args = "was called"	
 		end
 
@@ -18,7 +18,7 @@ describe "Secure context" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
 
-		x.secure_context.define_singleton_method(:no_args_method_with_block) do
+		x.secure_context.define_singleton_method(:before_no_args_method_with_block) do
 			Proc.new { 10 }
 		end
 
@@ -51,7 +51,7 @@ describe "Secure context" do
 	it "uses multiple return values as arguments to a method" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
-		x.secure_context.define_singleton_method(:add) { |x, y| return 10, 20 }
+		x.secure_context.define_singleton_method(:before_add) { |x, y| return 10, 20 }
 
 		x.add(1, 2).should == 30
 	end
@@ -59,7 +59,7 @@ describe "Secure context" do
 	it "throws an ArgumentError when too few arguments are returned" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
-		x.secure_context.define_singleton_method(:add) { |x, y| return }
+		x.secure_context.define_singleton_method(:before_add) { |x, y| return }
 
 		lambda{x.add(1, 2)}.should raise_error(ArgumentError)
 	end
@@ -67,7 +67,7 @@ describe "Secure context" do
 	it "throws an ArgumentError when too many args are returned without it being a splat" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
-		x.secure_context.define_singleton_method(:add) { |x, y| return 10, 20, 30 }
+		x.secure_context.define_singleton_method(:before_add) { |x, y| return 10, 20, 30 }
 
 		lambda{x.add(1, 2)}.should raise_error(ArgumentError)
 	end
@@ -76,7 +76,7 @@ describe "Secure context" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
 
-		x.secure_context.define_singleton_method(:block_method) do
+		x.secure_context.define_singleton_method(:before_block_method) do
 			Proc.new { 10 }
 		end
 
@@ -86,7 +86,7 @@ describe "Secure context" do
 	it "throws a LocalJumpError when just a block is passed, but context returns nothing" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
-		x.secure_context.define_singleton_method(:block_method) { }
+		x.secure_context.define_singleton_method(:before_block_method) { }
 
 		lambda{x.block_method { false }}.should raise_error(LocalJumpError)
 	end
@@ -96,7 +96,7 @@ describe "Secure context" do
 		x.secure_context = SecureContextSpecs::SecureContext.new
 		x.method_block_and_argument(4) { |n| n % 2 == 0 }.should == true
 
-		x.secure_context.define_singleton_method(:method_block_and_argument) do |*args, &block|
+		x.secure_context.define_singleton_method(:before_method_block_and_argument) do |*args, &block|
 			return 5, block
 		end
 
@@ -111,7 +111,7 @@ describe "Secure context" do
 		is_odd = Proc.new { |n| n % 2 == 0 }
 		x.method_block_and_argument(4, &is_even).should == true
 
-		x.secure_context.define_singleton_method(:method_block_and_argument) do |*args, &block|
+		x.secure_context.define_singleton_method(:before_method_block_and_argument) do |*args, &block|
 			return 5, block
 		end
 
@@ -125,7 +125,7 @@ describe "Secure context" do
 		product = Proc.new { |x| x.inject(:*) }
 		x.method_block_and_argument_splat(4, &product).should == 4
 
-		x.secure_context.define_singleton_method(:method_block_and_argument_splat) do |arg, &block|
+		x.secure_context.define_singleton_method(:before_method_block_and_argument_splat) do |arg, &block|
 			sum = Proc.new { |x| x.inject(:+) }
 			return 1, 10, 100, sum
 		end
@@ -138,7 +138,7 @@ describe "Secure context" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
 
-		x.secure_context.define_singleton_method(:block_method) do |&block|
+		x.secure_context.define_singleton_method(:before_block_method) do |&block|
 			"abc"
 		end
 
@@ -149,13 +149,13 @@ describe "Secure context" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
 
-		x.secure_context.define_singleton_method(:block_method) do |&block|
+		x.secure_context.define_singleton_method(:before_block_method) do |&block|
 			->{ 10 }
 		end
 
 		x.block_method { 5 }.should == 10
 
-		x.secure_context.define_singleton_method(:block_method) do |&block|
+		x.secure_context.define_singleton_method(:before_block_method) do |&block|
 			Proc.new { 10 }
 		end
 

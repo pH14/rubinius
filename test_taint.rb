@@ -27,25 +27,32 @@ class TaintBit < BasicObject
 			if not @defined_methods.include? method_sym
 				# ::Kernel.puts "Eigenclass has #{eigenclass.methods.sort!}"
 				generic_hook = ::Object::Proc.new do |*args, &block|
-					puts "My args are #{args}"
-					if block_given?
-						if args[0].empty?
+					::Kernel.puts "Defined method: #{method_sym} args are #{args}, block is #{block}"
+
+					if not block.nil?#block_given?
+						if args.empty?
+							::Kernel.puts "Returning just block"
 							return block
 						end
 
+						::Kernel.puts "Returning both"
 						return args, block
 					else
-						# puts "Args are #{args}"
-						return args[0]
+						if not block.nil?
+							::Kernel.puts "WTF Alert: Block not given, but block is not nil"
+						end
+						::Kernel.puts "Returning args #{args} because block_given is #{block_given?}"
+						return args
 					end
 				end
 
+				::Kernel.puts "Defining #{method_sym} for the first time!"
 				eigenclass.__send__(:define_singleton_method, :method_sym, generic_hook)
 
 				@defined_methods.push method_sym
 			end
 
-			eigenclass.__send__(:method_sym, call_args, call_block)
+			eigenclass.__send__(:method_sym, *call_args, &call_block)
 		rescue ::Object::Exception => e
 			::Kernel.puts "Caught error in BasicObject #{e}"
 		end
@@ -80,8 +87,20 @@ y.secure_context = TaintBit.new
 # puts y.to_upper!
 # puts y.secure_context.inspect
 
+# y.upcase!
+
 y.each_char do |c|
 	puts c.upcase!
 end
+
+y.each_char do |c|
+	c.upcase!
+end
+
+puts y
+
+# y.each_char do |c|
+# 	puts c.upcase!
+# end
 
 # puts y

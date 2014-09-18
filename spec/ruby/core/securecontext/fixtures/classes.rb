@@ -1,5 +1,5 @@
 module SecureContextSpecs
-	class SecureContext < BasicObject
+	class SecureContext
 		attr_accessor :tainted
 		attr_accessor :return_args
 		attr_accessor :return_block
@@ -7,30 +7,30 @@ module SecureContextSpecs
 		def initialize(*args, &block)
 			@return_args = args
 
-			if block_given?
+			if ::Kernel::block_given?
 				@return_block = block
 			else
-				@return_block = lambda { |n| i % 2 == 1 }
+				@return_block = ::Kernel::lambda { |n| i % 2 == 1 }
 			end
 		end
 
-		def args_and_block(*args, &block)
+		def before_args_and_block(*args, &block)
 			return args, block
 		end
 
-		def method_with_splat(*args)
+		def before_method_with_splat(*args)
 			@return_args
 		end
 
-		def method_no_splat(arg)
+		def before_method_no_splat(arg)
 			@return_args
 		end
 
-		def method_block_as_argument(&block)
+		def before_method_block_as_argument(&block)
 			return @return_block
 		end
 
-		def method_block_and_argument(arg1, &block)
+		def before_method_block_and_argument(arg1, &block)
 			return arg1, block
 		end
 
