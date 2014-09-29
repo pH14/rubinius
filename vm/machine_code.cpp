@@ -239,6 +239,7 @@ namespace rubinius {
         Symbol* name = try_as<Symbol>(original->literals()->at(opcodes[ip + 1]));
         if(!name) name = nil<Symbol>();
 
+        // std::cerr << "Storing a new callsite with name " << name->cpp_str(state) << "\n";
         CallSite* call_site = CallSite::empty(state, name, original, ip);
 
         call_site_offsets_[inline_index] = ip;

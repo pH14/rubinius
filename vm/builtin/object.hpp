@@ -384,6 +384,24 @@ namespace rubinius {
     Object* trust(STATE);
 
     /**
+     * Sets the hooked block flag on this object.
+     */
+    // Rubinius.primitive :object_hook_block
+    Object* hook_block(STATE);
+
+    /**
+     * Clears the hooked block flag on this object.
+     */
+    // Rubinius.primitive :object_unhook_block
+    Object* unhook_block(STATE);
+
+    /**
+     * Returns true if this object's hooked block flag is set.
+     */
+    // Rubinius.primitive+ :object_hooked_block_p
+    Object* hooked_block_p(STATE);
+
+    /**
      *  Returns an #inspect-like representation of an Object for
      *  use in C++ code.
      *

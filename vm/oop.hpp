@@ -150,6 +150,7 @@ Object* const cUndef = reinterpret_cast<Object*>(0x22L);
 #define OBJECT_FLAGS_UNTRUSTED      26
 #define OBJECT_FLAGS_LOCK_CONTENDED 27
 #define OBJECT_FLAGS_SECURE_CONTEXT 28
+#define OBJECT_FLAGS_HOOKED_BLOCK   29
 
   struct ObjectFlags {
     object_type  obj_type        : 8;
@@ -169,7 +170,8 @@ Object* const cUndef = reinterpret_cast<Object*>(0x22L);
     unsigned int Untrusted       : 1;
     unsigned int LockContended   : 1;
     unsigned int SecureContext   : 1;
-    unsigned int unused          : 3;
+    unsigned int HookedBlock     : 1;
+    unsigned int unused          : 2;
 
     uint32_t aux_word;
   };
@@ -563,6 +565,15 @@ Object* const cUndef = reinterpret_cast<Object*>(0x22L);
     }
 
     void set_secure_context(int val=1);
+
+    bool is_hooked_block_p() const {
+      if (reference_p()) {
+        return flags().HookedBlock == 1;
+      }
+      return false;
+    }
+
+    void set_hooked_block(int val=1);
 
     uint32_t object_id(STATE) const {
       // Pull this out into a local so that we don't see any concurrent

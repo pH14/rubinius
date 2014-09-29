@@ -837,8 +837,29 @@ namespace rubinius {
     return RBOOL(is_untrusted_p());
   }
 
+  /* pwh additions for secure context and hooked block header bits */
   Object* Object::secure_context_p(STATE) {
     return RBOOL(is_secure_context_p());
+  }
+
+  Object* Object::hook_block(STATE) {
+    if(! is_hooked_block_p()) {
+      check_frozen(state);
+      set_hooked_block();
+    }
+    return this;
+  }
+
+  Object* Object::unhook_block(STATE) {
+    if(is_hooked_block_p()) {
+      check_frozen(state);
+      if(reference_p()) set_hooked_block(0);
+    }
+    return this;
+  }
+
+  Object* Object::hooked_block_p(STATE) {
+    return RBOOL(is_hooked_block_p());
   }
 
   TypeInfo* Object::type_info(STATE) const {

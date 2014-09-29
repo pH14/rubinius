@@ -304,6 +304,16 @@ retry:
     } 
   }
 
+  void ObjectHeader::set_hooked_block(int val) {
+    for(;;) {
+      HeaderWord orig    = header;
+      HeaderWord new_val = orig;
+      new_val.f.HookedBlock  = val;
+
+      if(header.atomic_set(orig, new_val)) return;
+    }
+  }
+
   void ObjectHeader::set_untrusted(int val) {
     for(;;) {
       HeaderWord orig     = header;

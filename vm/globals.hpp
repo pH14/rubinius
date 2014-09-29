@@ -70,6 +70,7 @@ namespace rubinius {
 
     /* Security Context symbol */
     TypedRoot<Symbol*> sym_secure_context;
+    TypedRoot<Symbol*> sym_hooked_block;
 
     TypedRoot<Class*> exception;
     TypedRoot<Class*> exc_arg, exc_segfault;

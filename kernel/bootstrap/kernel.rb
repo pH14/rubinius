@@ -94,6 +94,21 @@ module Kernel
     raise PrimitiveFailure, "Kernel#untrusted? primitive failed"
   end
 
+  def hook_block
+    Rubinius.primitive :object_hook_block
+    raise PrimitiveFailure, "Kernel#hook_block primitive failed"
+  end
+
+  def unhook_block
+    Rubinius.primitive :object_unhook_block
+    raise PrimitiveFailure, "Kernel#unhook_block primitive failed"
+  end
+
+  def hooked_block?
+    Rubinius.primitive :object_hooked_block_p
+    raise PrimitiveFailure, "Kernel#hooked_block_p primitive failed"
+  end
+
   # NOTE: The bootstrap method used to add method definitions to the class
   # method_table still returns a CompiledCode instance, so this chaining
   # works.
