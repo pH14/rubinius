@@ -118,6 +118,7 @@ namespace rubinius {
 
       if(recv->is_secure_context_p()) {// && ((args.total() > 0) || args.block() != cNil)) {
 
+
         // Symbol* method_symbol = state->symbol("intercept_arguments");
         // CallSite* intercept_call_site = reinterpret_cast<CallSite*>(method_symbol);
         // std::cerr << "[vm/CallSite#execute] New CallSite symbol name is: " << intercept_call_site->name_->cpp_str(state) << "\n";
@@ -126,6 +127,9 @@ namespace rubinius {
         std::cerr << "[vm/CallSite#execute] Arg f'n: " << args.name()->cpp_str(state) << " CS f'n: " << this->name_->cpp_str(state) << "\n";
         std::cerr << "[vm/CallSite#execute] Number of args before call is: " << args.total() << "\n";
         std::cerr << "[vm/CallSite#execute] Original CallSite symbol name is: " << this->name_->cpp_str(state) << "\n";
+
+        CompiledCode* compiledCode = try_as<CompiledCode>(this->executable());
+        std::cerr << "[vm/CallSite#execute] Compiled code args: " << compiledCode->total_args()->to_native() << " and arity " << compiledCode->arity()->to_native() << " and required " << compiledCode->required_args()->to_native() << " local count " << compiledCode->local_count()->to_native() << "\n";
 
         call_frame->dump();
 
@@ -153,7 +157,7 @@ namespace rubinius {
 
         Object* returned_args = secure_context_object->send(state, call_frame, before_symbol, args.as_array(state), args.block(), false);
 
-        this->arguments_from_call(state, returned_args, args, before_updated_args);
+        this->arguments_from_call(state, returned_args, args, before_updated_args, compiledCode);
         //  Symbol* SymbolTable::lookup(STATE, const std::string& str) {
         //       Object* send(STATE, CallFrame* caller, Symbol* name, Array* args,
         // Object* block = cNil, bool allow_private = true);
@@ -179,7 +183,7 @@ namespace rubinius {
     }
 
 
-    void arguments_from_call(STATE, Object* returned_args, Arguments& original_args, Arguments& updated_args) {
+    void arguments_from_call(STATE, Object* returned_args, Arguments& original_args, Arguments& updated_args, CompiledCode* compiled_code) {
         if(!returned_args) {
           std::cerr << "[vm/CallSite#execute] Secure context didn't return anything for " << original_args.name()->cpp_str(state) << " .\n";
           updated_args = original_args;
@@ -271,7 +275,11 @@ namespace rubinius {
                *
                */
               // Exception::argument_error(state, "secure context returned arguments to arity-0 method");
-               // updated_args.use_argument()
+
+               native_int threshold = 1;
+               if (compiled_code->required_args()->to_native() >= threshold) {
+                  updated_args.use_argument(returned_args);
+               }
             }
           }
         }
