@@ -90,6 +90,17 @@ namespace rubinius {
     call_site->update(state, recv_class, dis);
 
     Executable* meth = dis.method;
+
+    // if (recv->is_secure_context_p()) {
+    //   if (CompiledCode* compiledCode = try_as<CompiledCode>(meth)) {
+    //     std::cerr << "[vm/call_site#empty_cache] Call site has total args: " << compiledCode->total_args()->to_native() << " and " << compiledCode->required_args()->to_native() << " and arity " << compiledCode->arity()->to_uint() << "\n";
+    //   } else {
+    //     std::cerr << "[vm/call_site#empty_cache] Could not coerce meth to compiled code\n";
+    //   }
+    // }
+
+    // std::cerr << "[vm/call_site#empty_cache] Call site machine code has total args: " << machine_code->total_args << " req " << machine_code->required_args << " post_args " << machine_code->post_args << " splat pos " << machine_code->splat_position << " stack size " << machine_code->stack_size << "\n";
+
     Module* mod = dis.module;
 
     // std::cout << "[vm/CallSite#empty_cache] Handling symbol " << call_site->name()->cpp_str(state) << "\n";

@@ -926,20 +926,6 @@ namespace rubinius {
     return RBOOL(dis.resolve(state, name, lookup));
   }
 
-  void Object::intercept_args(STATE, CallFrame* call_frame, Executable* exec, Module* mod, Arguments& args) {
-    // if(!this->is_secure_context_p()) {
-    //   return;
-    // }
-
-    // std::cout << "[vm/Object#intercept_args] Secure context calling " << exec << "\n";
-    // for(uint32_t i = 0; i < args.total(); i++) {
-    //   std::cout << "[vm/Object#intercept_args] Arg " << i << " : " << args.get_argument(i)->to_string(state, false) << "\n";
-    // }
-
-    // this->send_prim(state, call_frame, exec, mod, args, G(sym_private));
-    // args.shift(state);
-  }
-
   void Object::write_barrier(ObjectMemory* om, void* obj) {
     om->write_barrier(this, reinterpret_cast<Object*>(obj));
   }

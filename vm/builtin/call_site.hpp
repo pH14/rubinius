@@ -6,7 +6,7 @@
 #include "machine_code.hpp"
 #include "object_utils.hpp"
 #include "arguments.hpp"
-// #include "method_table.hpp"
+#include "lookup_data.hpp"
 #include "call_frame.hpp"
 #include "exception.hpp"
 
@@ -112,74 +112,136 @@ namespace rubinius {
     static bool lookup_method_missing(STATE, CallFrame* call_frame, Arguments& args, Dispatch& dis, Object* self, Module* begin);
 
     Object* execute(STATE, CallFrame* call_frame, Arguments& args) {
-      Object* const recv = args.recv();
-      CallFrame* const orig_call_frame = call_frame;
-      // Arguments& const original_args = args;
 
-      if(recv->is_secure_context_p()) {// && ((args.total() > 0) || args.block() != cNil)) {
+      if(args.recv()->is_secure_context_p()) {
+        Object* const recv = args.recv();
+        CallFrame* const orig_call_frame = call_frame;
 
-
-        // Symbol* method_symbol = state->symbol("intercept_arguments");
-        // CallSite* intercept_call_site = reinterpret_cast<CallSite*>(method_symbol);
-        // std::cerr << "[vm/CallSite#execute] New CallSite symbol name is: " << intercept_call_site->name_->cpp_str(state) << "\n";
-
-        std::cerr << "[vm/CallSite#execute] Receiver has a secure context for f'n: " << args.name()->cpp_str(state) << "\n";
+        std::cerr << "----------------------------\n";
+        std::cerr << "[vm/CallSite#execute] Receiver " << recv->to_string(state, true) << " has a secure context for f'n: " << args.name()->cpp_str(state) << "\n";
         std::cerr << "[vm/CallSite#execute] Arg f'n: " << args.name()->cpp_str(state) << " CS f'n: " << this->name_->cpp_str(state) << "\n";
-        std::cerr << "[vm/CallSite#execute] Number of args before call is: " << args.total() << "\n";
+        std::cerr << "[vm/CallSite#execute] Number of args : " << args.total() << "\n";
         std::cerr << "[vm/CallSite#execute] Original CallSite symbol name is: " << this->name_->cpp_str(state) << "\n";
 
-        CompiledCode* compiledCode = try_as<CompiledCode>(this->executable());
-        std::cerr << "[vm/CallSite#execute] Compiled code args: " << compiledCode->total_args()->to_native() << " and arity " << compiledCode->arity()->to_native() << " and required " << compiledCode->required_args()->to_native() << " local count " << compiledCode->local_count()->to_native() << "\n";
 
-        call_frame->dump();
 
-        // Tuple* call_site_tuple = (Tuple*) MachineCode::call_sites(STATE);
 
-        // for (native_int q = 0; q < call_site_tuple.num_fields(); q++) {
-        //   Tuple t = call_site_tuple.at(q);
-        // }
 
-        // args.set_recv(recv->get_secure_context_prim(state));
+
+
+        CompiledCode* compiledCode = try_as<CompiledCode>(this->executable_);
 
         Object* secure_context_object = recv->get_secure_context_prim(state);
 
         Symbol* before_symbol = state->shared().symbols.lookup(state, "before_" + args.name()->cpp_str(state));
-        // Symbol* after_symbol = state->shared().symbols.lookup(state, "after_" + args.name()->cpp_str(state));
+        Symbol* after_symbol  = state->shared().symbols.lookup(state, "after_" + args.name()->cpp_str(state));
 
         Arguments before_updated_args(args.name());
-        Arguments after_updated_args(args.name());
 
         std::cerr << "[vm/CallSite#execute] Before sym " << before_symbol->cpp_str(state) << "\n";
 
-          for(size_t i = 0; i < args.as_array(state)->size(); i++) {
-            std::cerr << "[vm/CallSite#execute] Before pre-hook, Arg << " << i << " is " << args.as_array(state)->get(state, i)->to_string(state) << "\n";
+        for(size_t i = 0; i < args.as_array(state)->size(); i++) {
+          std::cerr << "[vm/CallSite#execute] Before pre-hook, Arg << " << i << " is " << args.as_array(state)->get(state, i)->to_string(state) << "\n";
+        }
+
+        if (CBOOL(secure_context_object->respond_to(state, before_symbol, cFalse))) {
+          std::cerr << "[vm/CallSite#execute] Context does have pre-hook for call site\n";
+          std::cerr << "[vm/CallSite#execute] Block given is " << args.block()->to_string(state, true) << "\n";
+
+          // All hooks should have a reference to the caller
+          Array* caller_array = Array::create(state, 1);
+          caller_array->append(state, recv);
+          args.prepend(state, caller_array);
+
+          // Execute pre-hook with modified args
+          Object* returned_args = secure_context_object->send(state, call_frame, before_symbol, args.as_array(state), args.block(), false);
+
+          LookupData lookup(orig_call_frame->self(), recv->lookup_begin(state), G(sym_public));
+          Dispatch dis(this->name_);
+
+          if(!dis.resolve(state, this->name(), lookup)) {
+            std::cerr << "[vm/CallSite#execute] Could not resolve method before call to executor\n";
           }
 
-        Object* returned_args = secure_context_object->send(state, call_frame, before_symbol, args.as_array(state), args.block(), false);
+          compiledCode = try_as<CompiledCode>(dis.method);
 
-        this->arguments_from_call(state, returned_args, args, before_updated_args, compiledCode);
-        //  Symbol* SymbolTable::lookup(STATE, const std::string& str) {
-        //       Object* send(STATE, CallFrame* caller, Symbol* name, Array* args,
-        // Object* block = cNil, bool allow_private = true);
-        // Object* Object::send(STATE, CallFrame* caller, Symbol* name, bool allow_private) {
+          std::cerr << "[vm/CallSite#execute] Discovered method has total args: " << compiledCode->total_args()->to_native() << " and " << compiledCode->required_args()->to_native() << " and arity " << compiledCode->arity()->to_uint() << "\n";
 
-        // Object* returned_args = (*executor_)(state, this, call_frame, args);
-        // Object* returned_args = (*executor_)(state, this, call_frame, args);
+          this->arguments_from_call(state, returned_args, args, before_updated_args, compiledCode);
+
+          std::cerr << "[vm/CallSite#execute] Setting receiver...\n";
 
           before_updated_args.set_recv(recv);
 
-          std::cerr << "[vm/CallSite#execute] Now calling original CallSite: " << this->name_->cpp_str(state) << "\n";
+          for(size_t i = 0; i < before_updated_args.as_array(state)->size(); i++) {
+            std::cerr << "[vm/CallSite#execute] Before original method, with pre-hooked args << " << i << " is " << before_updated_args.as_array(state)->get(state, i)->to_string(state) << "\n";
+          }
 
-          orig_call_frame->dump();
-          return (*executor_)(state, this, orig_call_frame, before_updated_args);
-          // Object* hooked_return = (*executor_)(state, this, orig_call_frame, args);
+        } else {
+          std::cerr << "[vm/CallSite#execute] Context does _not_ have pre-hook for call site\n";
+          before_updated_args = args;
+        }
 
-          // before_updated_args.use_array(try_as<Array>(hooked_return));
 
-          // return secure_context_object->send(state, call_frame, after_symbol, args.as_array(state), args.block(), false);
+
+
+
+
+
+        std::cerr << "[vm/CallSite#execute] Now calling original CallSite: " << this->name_->cpp_str(state) << "\n";
+
+        Object* proxy_method_return_args = (*executor_)(state, this, call_frame, before_updated_args);
+        std::cerr << "[vm/CallSite#execute] After original call, returns object " << proxy_method_return_args->to_string(state, true) << "\n";
+
+
+
+
+
+
+
+        if (CBOOL(secure_context_object->respond_to(state, after_symbol, cFalse))) {
+          std::cerr << "[vm/CallSite#execute] Context does have post-hook for call site " << this->name()->cpp_str(state) << "\n";
+
+          if (! proxy_method_return_args) {
+            std::cerr << "[vm/CallSite#execute] No returned values from original methods\n";
+            return secure_context_object->send(state, call_frame, after_symbol, false);
+          }
+
+          Arguments after_updated_args = arguments_from_proxy_method(state, args, proxy_method_return_args, recv);
+
+          return secure_context_object->send(state, call_frame, after_symbol, after_updated_args.as_array(state), after_updated_args.block(), false);
+        } else {
+          std::cerr << "[vm/CallSite#execute] Context does _not_ have post-hook for call site! " << this->name()->cpp_str(state) << "\n";
+          return proxy_method_return_args;
+        }
       }
 
       return (*executor_)(state, this, call_frame, args);
+    }
+
+
+    Arguments arguments_from_proxy_method(STATE, Arguments& args, Object* proxy_method_return_args, Object* recv) {
+      if (Array* each_hooked_arg = try_as<Array>(proxy_method_return_args)) {
+        std::cerr << "[vm/CallSite#execute] Call site's args were an array " << each_hooked_arg << "\n";
+
+        Array* caller_array = Array::create(state, 1);
+        caller_array->append(state, recv);
+
+        Arguments arguments(args.name(), each_hooked_arg);
+        arguments.set_recv(args.recv());
+        arguments.prepend(state, caller_array);
+
+        return arguments;
+      } else {
+        std::cerr << "[vm/CallSite#execute] Call site's args were just one arg " << proxy_method_return_args->to_string(state, true) << "\n";
+
+        Tuple* args_tuple = Tuple::from(state, 2, recv, proxy_method_return_args);
+
+        Arguments arguments(args.name());
+        arguments.set_recv(args.recv());
+        arguments.use_tuple(args_tuple, 2);
+        return arguments;
+      }
     }
 
 
@@ -187,100 +249,62 @@ namespace rubinius {
         if(!returned_args) {
           std::cerr << "[vm/CallSite#execute] Secure context didn't return anything for " << original_args.name()->cpp_str(state) << " .\n";
           updated_args = original_args;
-          // If the secure context doesn't return anything, args will be prepended with the symbol of the method call
-          // Case when the pre-hook method does not exist and method_missing is not defined.
-          // Treat it as though this call never happened.
+          return;
+        }
 
-          // std::cerr << "[vm/CallSite#execute] Number of args is: " << original_args.total() << "\n";
+        // for(size_t i = 0; i < original_args.as_array(state)->size(); i++) {
+        //   std::cerr << "[vm/CallSite#execute] Arg << " << i << " is " << original_args.as_array(state)->get(state, i)->to_string(state) << "\n";
+        // }
+        
+        if(Array* each_hooked_arg = try_as<Array>(returned_args)) {
+          std::cerr << each_hooked_arg->get(state, 0)->direct_class(state);
+          std::cerr << "[vm/CallSite#execute] Number of hooked args is: " << each_hooked_arg->size() << "\n";
 
-          // for(size_t i = 0; i < original_args.as_array(state)->size(); i++) {
-          //   std::cerr << "[vm/CallSite#execute] Arg << " << i << " is " << original_args.as_array(state)->get(state, i)->to_string(state) << "\n";
-          // }
+          size_t args_range = each_hooked_arg->size();
+          Array* ary = Array::create(state, args_range);
 
-          // so we remove that and call the function on the original receiver
-          // if(args.total() > 0) {
-          //   args.shift(state);
-          // }
-          // args.set_recv(recv);
-        } else {
-          bool block_given = (original_args.block() != cNil);
-          std::cerr << "[vm/CallSite#execute] Block_given? " << block_given << "\n";
+          size_t returned_args_index = 0;
+          for(size_t i = 0; i < args_range; i++) {
+            std::cerr << "[vm/CallSite#execute] Hooked arg is " << each_hooked_arg->get(state,i)->to_string(state) << "\n";
 
-          if(original_args.total() > 0) {
-            for(size_t i = 0; i < original_args.as_array(state)->size(); i++) {
-              std::cerr << "[vm/CallSite#execute] Arg << " << i << " is " << original_args.as_array(state)->get(state, i)->to_string(state) << "\n";
-            }
-            
-  // inline Class* Object::direct_class(STATE) const {
-            if(Array* each_hooked_arg = try_as<Array>(returned_args)) {
-              // TypeInfo* type_info = each_hooked_arg->get(state, 0)->type_info(state);
-              // std::cerr << "[vm/CallSite#execute] Type info: ";
-              // type_info->show_simple(state, each_hooked_arg->get(state, 0), 2);
-              // std::cerr << "\n";
+            Object* returned_arg = each_hooked_arg->get(state, i);
 
-              std::cerr << each_hooked_arg->get(state, 0)->direct_class(state);
-
-              std::cerr << "[vm/CallSite#execute] Number of hooked args is: " << each_hooked_arg->size() << "\n";
-
-              size_t args_range = each_hooked_arg->size();
-              std::cerr << "[vm/CallSite#execute] Args size before block subtraction is " << args_range << "\n";
-
-              // The secure context returns (arg, arg, arg, .. block) if it's supposed to return a block
-              if (block_given) {
-                args_range--;
-              }
-
-              std::cerr << "[vm/CallSite#execute] Trying to make an array with size " << args_range << "\n";
-              Array* ary = Array::create(state, args_range);
-
-              std::cerr << "[vm/CallSite#execute] Will be adding in: " << args_range << " arguments\n";
-
-              for(size_t i = 0; i < args_range; i++) {
-                std::cerr << "[vm/CallSite#execute] Hooked arg is " << each_hooked_arg->get(state,i)->to_string(state) << "\n";
-                ary->set(state, i, each_hooked_arg->get(state, i));
-              }
-
-              updated_args.use_array(ary);
-
-              if (block_given) {
-                std::cerr << "[vm/CallSite#execute] Original args does have block. Setting it on new args.\n";
-                updated_args.set_block(each_hooked_arg->get(state, each_hooked_arg->size() - 1));
-              }
-            } else { // if try_as fails
-
-              // Only 1 arg returned, original receiver takes 0 args, this means it should be a block
-              if(block_given) {
-                std::cerr << "[vm/CallSite#execute] Original args does have block, attaching. No args.\n";
-                std::cerr << "[vm/CallSite#execute] -- " << original_args.total() << "\n";
-                updated_args.set_block(returned_args);
-              } else {
-                Exception::argument_error(state, "secure context returned too few arguments");
-              }
-            }
-          } else {
-            if (block_given) {
-              std::cerr << "[vm/CallSite#execute] Original args does have block, but no other args.\n";
-              updated_args.set_block(returned_args);
+            if (returned_arg->is_hooked_block_p()) {
+              updated_args.set_block(each_hooked_arg->get(state, each_hooked_arg->size() - 1));
             } else {
-              /* This is an ambiguous case and should probably be solved after more thought from the API-aspect.
-               * This is when the original method takes no arguments, but arguments (possibly a block) were returned 
-               * by the secure context.
-               * 
-               * Since the last evaluated line in a method in Ruby often returns a value, the value returned by 
-               * the secure context could be completely unintentional. In that case, we certainly don't want
-               * to do anything with it. However, it's also possible that the secure context was supposed
-               * to give a block to the method, but that will look the same here: 1 argument was returned.
-               * There needs to be a way to distinguish these two cases, and checking if it's a Proc or lambda
-               * here isn't sufficient.
-               *
-               */
-              // Exception::argument_error(state, "secure context returned arguments to arity-0 method");
-
-               native_int threshold = 1;
-               if (compiled_code->required_args()->to_native() >= threshold) {
-                  updated_args.use_argument(returned_args);
-               }
+              ary->set(state, returned_args_index++, each_hooked_arg->get(state, i));
             }
+          }
+
+          updated_args.use_array(ary);
+
+        } else { // if try_as fails, only have one argument
+
+          std::cerr << "[vm/CallSite#execute] Dreaded ambiguous case. Object is : " << returned_args->to_string(state, false) << "\n";
+
+          // Potentially ambiguity of this case is largely resolved by the hooked_block?
+          // attribute stored in the header object. If it's a hooked block, we try that
+          // since the developer definitely meant for that to be passed. Otherwise, if
+          // the wrapped method requires an argument, we give it whatever is returned
+          // in an attempt to do the right thing. It's still possible that the value was
+          // not meant to be returned (implicit return) and the wrapped method is getting
+          // something it wasn't expecting, but at that point, I think that's more of a
+          // flaw in the pre-hook than here in the VM.
+
+          // system.cpp lookup code
+
+          std::cerr << "[vm/CallSite#execute] Call site has total args: " << compiled_code->total_args()->to_native() << " and " << compiled_code->required_args()->to_native() << "\n";
+
+          native_int threshold = 1;
+          if (returned_args->is_hooked_block_p()) {
+            std::cerr << "[vm/CallSite#execute] -- is a block so trying that...\n";
+            updated_args.set_block(returned_args);
+          } else if (compiled_code->total_args()->to_native() >= threshold) {
+            std::cerr << "[vm/CallSite#execute] -- requires an arg so trying that...\n";
+
+            Tuple* args_tuple = Tuple::from(state, 1, returned_args);
+            // updated_args.use_argument(returned_args);
+            updated_args.use_tuple(args_tuple, 1);
           }
         }
     }
@@ -312,4 +336,3 @@ namespace rubinius {
 }
 
 #endif
-

@@ -12,9 +12,12 @@ module SecureContextSpecs
 			else
 				@return_block = ::Kernel::lambda { |n| i % 2 == 1 }
 			end
+
+			@return_block.hook_block
 		end
 
 		def before_args_and_block(*args, &block)
+			block.hook_block
 			return args, block
 		end
 
@@ -22,7 +25,7 @@ module SecureContextSpecs
 			@return_args
 		end
 
-		def before_method_no_splat(arg)
+		def before_method_no_splat(obj, arg)
 			@return_args
 		end
 
@@ -30,13 +33,14 @@ module SecureContextSpecs
 			return @return_block
 		end
 
-		def before_method_block_and_argument(arg1, &block)
+		def before_method_block_and_argument(obj, arg1, &block)
+			block.hook_block
 			return arg1, block
 		end
 
-		def puts(*args)
-			args
-		end
+		# def puts(*args)
+		# 	args
+		# end
 	end
 
 	class TestObject
@@ -45,7 +49,6 @@ module SecureContextSpecs
 		end
 
 		def block_method(&block)
-			"hello"
 			yield
 		end
 
@@ -54,7 +57,7 @@ module SecureContextSpecs
 		end
 
 		def method_no_splat(arg)
-			arg
+			return arg
 		end
 
 		def method_block_as_argument(&block)
@@ -73,8 +76,24 @@ module SecureContextSpecs
 			x + y
 		end
 
+		def one_arg_one_return(arg)
+			puts arg
+			arg
+		end
+
 		def no_args_method
 			10
+		end
+
+		def returns_nothing
+		end
+
+		def returns_one_value
+			10
+		end
+
+		def returns_many_values
+			return 10, "hello", 20, "world", 30
 		end
 
 		def no_args_method_with_block
