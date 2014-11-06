@@ -1,0 +1,3 @@
+#define RBX_VERSION       "2.0.0.n302"
+#define RBX_RELEASE_DATE  "2013-10-29"
+#define RBX_BUILD_REV     "5a56e9b275743abc1807f2b0e595b8c53e91b954"

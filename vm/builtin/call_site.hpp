@@ -139,12 +139,13 @@ namespace rubinius {
         Arguments before_updated_args(args.name());
 
         std::cerr << "[vm/CallSite#execute] Before sym " << before_symbol->cpp_str(state) << "\n";
+        std::cerr << "[vm/CallSite#execute] After sym " << after_symbol->cpp_str(state) << "\n";
 
         for(size_t i = 0; i < args.as_array(state)->size(); i++) {
           std::cerr << "[vm/CallSite#execute] Before pre-hook, Arg << " << i << " is " << args.as_array(state)->get(state, i)->to_string(state) << "\n";
         }
 
-        if (CBOOL(secure_context_object->respond_to(state, before_symbol, cFalse))) {
+        if (CBOOL(secure_context_object->respond_to(state, before_symbol, cTrue))) {
           std::cerr << "[vm/CallSite#execute] Context does have pre-hook for call site\n";
           std::cerr << "[vm/CallSite#execute] Block given is " << args.block()->to_string(state, true) << "\n";
 
@@ -154,9 +155,9 @@ namespace rubinius {
           args.prepend(state, caller_array);
 
           // Execute pre-hook with modified args
-          Object* returned_args = secure_context_object->send(state, call_frame, before_symbol, args.as_array(state), args.block(), false);
+          Object* returned_args = secure_context_object->send(state, call_frame, before_symbol, args.as_array(state), args.block(), true);
 
-          LookupData lookup(orig_call_frame->self(), recv->lookup_begin(state), G(sym_public));
+          LookupData lookup(orig_call_frame->self(), recv->lookup_begin(state), G(sym_private));
           Dispatch dis(this->name_);
 
           if(!dis.resolve(state, this->name(), lookup)) {
@@ -199,17 +200,17 @@ namespace rubinius {
 
 
 
-        if (CBOOL(secure_context_object->respond_to(state, after_symbol, cFalse))) {
+        if (CBOOL(secure_context_object->respond_to(state, after_symbol, cTrue))) {
           std::cerr << "[vm/CallSite#execute] Context does have post-hook for call site " << this->name()->cpp_str(state) << "\n";
 
           if (! proxy_method_return_args) {
             std::cerr << "[vm/CallSite#execute] No returned values from original methods\n";
-            return secure_context_object->send(state, call_frame, after_symbol, false);
+            return secure_context_object->send(state, call_frame, after_symbol, true);
           }
 
           Arguments after_updated_args = arguments_from_proxy_method(state, args, proxy_method_return_args, recv);
 
-          return secure_context_object->send(state, call_frame, after_symbol, after_updated_args.as_array(state), after_updated_args.block(), false);
+          return secure_context_object->send(state, call_frame, after_symbol, after_updated_args.as_array(state), after_updated_args.block(), true);
         } else {
           std::cerr << "[vm/CallSite#execute] Context does _not_ have post-hook for call site! " << this->name()->cpp_str(state) << "\n";
           return proxy_method_return_args;

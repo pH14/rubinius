@@ -47,6 +47,62 @@ describe "Secure context" do
 		x.block_method(5, 6) { 10 }.should == 12
 	end
 
+	it "can propagate a simple tainting context" do
+		x = "hello, world!"
+		y = ""
+		z = ""
+
+		x.secure_context = SecureContextSpecs::TaintSecureContext.new(tainted=false)
+
+		x.secure_context?.should == true
+		y.secure_context?.should == false
+		z.secure_context?.should == false
+
+		y = x.upcase
+
+		x.secure_context?.should == true
+		y.secure_context?.should == true
+		z.secure_context?.should == false
+
+		z = y.downcase
+
+		x.secure_context?.should == true
+		y.secure_context?.should == true
+		z.secure_context?.should == true
+
+		x.should == z
+		y.should_not == x
+		y.should_not == z
+
+		x.should == "hello, world!"
+		y.should == "HELLO, WORLD!"
+		z.should == "hello, world!"
+	end
+
+	it "works with *" do
+		x = "hello, world"
+		x.secure_context = SecureContextSpecs::TaintSecureContext.new(tainted=false)
+		x.taint
+
+		y = x * 3
+
+		y.tainted?.should == true
+	end
+
+	it "works with +" do
+		x = "hello, world"
+
+		x.secure_context = SecureContextSpecs::TaintSecureContext.new(tainted=false)
+		x.taint
+
+		y = "!"
+
+		z = x + y
+
+		z.tainted?.should == true
+		y.tainted?.should_not == true
+	end
+
 	# block_given? is defined by the VariableScope class, which grabs the variables off of the call_frame.
 	# Because the context is built around fairly janky operations on the call_frame... it's likely to not
 	# work out how you want it to. However, that issue is separate from &block being passed in, so &block
