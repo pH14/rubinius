@@ -16,6 +16,10 @@ module SecureContextSpecs
 			@return_block.hook_block
 		end
 
+		def infect(other)
+			other
+		end
+
 		def before_args_and_block(*args, &block)
 			block.hook_block
 			return args, block
@@ -37,10 +41,82 @@ module SecureContextSpecs
 			block.hook_block
 			return arg1, block
 		end
+	end
 
-		# def puts(*args)
-		# 	args
-		# end
+	class TaintSecureContext
+		attr_accessor :tainted
+
+		def initialize(tainted)
+			@tainted = tainted
+		end
+
+		def taint
+			@tainted = true
+		end
+
+		def untaint
+			@tainted = false
+		end
+
+		def tainted?
+			@tainted == true
+		end
+
+		private
+
+		def infect(other)
+			other
+		end
+
+		def after_upcase(obj, new_string)
+			if not new_string.secure_context?
+				new_string.secure_context = TaintSecureContext.new(tainted=true)
+			else
+				new_string.secure_context.taint
+			end
+
+			new_string
+		end
+
+		def after_downcase(obj, new_string)
+			if not new_string.secure_context?
+				new_string.secure_context = TaintSecureContext.new(tainted=true)
+			else
+				new_string.secure_context.taint
+			end
+
+			new_string
+		end
+
+		def after_plus(obj, new_string)
+			if not new_string.secure_context?
+				new_string.secure_context = TaintSecureContext.new(tainted=true)
+			else
+				new_string.secure_context.taint
+			end
+
+			new_string
+		end
+
+		def after_multiply(obj, new_string)
+			if not new_string.secure_context?
+				new_string.secure_context = TaintSecureContext.new(tainted=true)
+			else
+				new_string.secure_context.taint
+			end
+
+			new_string
+		end
+
+		def after_[]()
+			if not new_string.secure_context?
+				new_string.secure_context = TaintSecureContext.new(tainted=true)
+			else
+				new_string.secure_context.taint
+			end
+
+			new_string
+		end
 	end
 
 	class TestObject
