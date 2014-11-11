@@ -53,6 +53,18 @@ class String
     *args = args
     ret = Rubinius::Sprinter.get(self).call(*args)
 
+    unless %w(%e %E %f %g %G).include? self
+      if self.eql? '%p'
+        args.each do |arg|
+          Rubinius::Type.infect ret, arg.inspect
+        end
+      else
+        args.each do |arg|
+          Rubinius::Type.infect ret, arg
+        end
+      end
+    end
+
     ret.taint if tainted?
     return ret
   end

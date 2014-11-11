@@ -80,18 +80,9 @@ describe :string_slice_index_length, :shared => true do
     str = "hello world"
     str.taint
 
-    # puts str.tainted?
-    # puts "Hey so it looks like we got ourselves... #{str.send(@method, 0,0).tainted?}"
-
-    # str.send(@method, 0,0).tainted?.should == true
-    x = str.send(@method, 0, 1)
-    puts x, x.tainted?
-    # y = str.byteslice 0,1
-    # puts "And just a bit o dat #{x.tainted?}, #{y.tainted?}, #{x == y}"
-
-    # puts "Hey so it looks like we got ourselves... #{str.send(@method, 0,1).tainted?}"
-    # str.send(@method, 0,1).tainted?.should == true
-    # str.send(@method, 2,1).tainted?.should == true
+    str.send(@method, 0,0).tainted?.should == true
+    str.send(@method, 0,1).tainted?.should == true
+    str.send(@method, 2,1).tainted?.should == true
   end
 
   it "returns nil if the offset falls outside of self" do

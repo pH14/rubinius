@@ -2,6 +2,7 @@
 #define RBX_DISPATCH_HPP
 
 #include "vm.hpp"
+#include "compiled_code.hpp"
 
 namespace rubinius {
   class Symbol;
@@ -33,6 +34,10 @@ namespace rubinius {
     Object* send(STATE, CallFrame* call_frame, LookupData& lookup, Arguments& args,
                  MethodMissingReason reason = eNormal);
     bool resolve(STATE, Symbol* name, LookupData& lookup);
+    std::string symbol_translate(STATE, const std::string& meth_name);
+  private:
+    Arguments arguments_from_proxy_method(STATE, Arguments& args, Object* proxy_method_return_args, Object* recv);
+    void arguments_from_call(STATE, Object* returned_args, Arguments& original_args, Arguments& updated_args, CompiledCode* compiled_code);
   };
 }
 
