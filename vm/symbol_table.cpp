@@ -58,6 +58,7 @@ namespace rubinius {
   size_t SymbolTable::add(std::string str, int enc) {
     bytes_used_ += (str.size() + sizeof(std::string) + sizeof(int) + sizeof(Kind));
 
+    // std::cerr << "SymbolTable adding : " << str << "\n";
     strings.push_back(str);
     encodings.push_back(enc);
     kinds.push_back(detect_kind(str.data(), str.size()));

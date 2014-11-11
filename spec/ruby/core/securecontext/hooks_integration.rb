@@ -84,9 +84,13 @@ describe "Secure context" do
 		x.secure_context = SecureContextSpecs::TaintSecureContext.new(tainted=false)
 		x.taint
 
-		y = x * 3
-
+		y = x.*(3)
+		
 		y.tainted?.should == true
+
+		z = x * 3
+
+		z.tainted?.should == true
 	end
 
 	it "works with +" do

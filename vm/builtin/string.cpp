@@ -1433,6 +1433,7 @@ namespace rubinius {
     infect(state, sub);
     sub->encoding_from(state, this);
 
+    // std::cerr << "Handling the string "  <<  "\n";
     return sub;
   }
 

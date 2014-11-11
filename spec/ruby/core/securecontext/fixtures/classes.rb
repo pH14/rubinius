@@ -62,9 +62,10 @@ module SecureContextSpecs
 			@tainted == true
 		end
 
-		private
+		# private
 
 		def infect(other)
+			other.taint
 			other
 		end
 
@@ -98,7 +99,8 @@ module SecureContextSpecs
 			new_string
 		end
 
-		def after_multiply(obj, new_string)
+		def after_op__multiply(obj, new_string)
+			puts "YESSSSS FINALLY **************************"
 			if not new_string.secure_context?
 				new_string.secure_context = TaintSecureContext.new(tainted=true)
 			else
@@ -108,15 +110,15 @@ module SecureContextSpecs
 			new_string
 		end
 
-		def after_[]()
-			if not new_string.secure_context?
-				new_string.secure_context = TaintSecureContext.new(tainted=true)
-			else
-				new_string.secure_context.taint
-			end
+		# def after_[]()
+		# 	if not new_string.secure_context?
+		# 		new_string.secure_context = TaintSecureContext.new(tainted=true)
+		# 	else
+		# 		new_string.secure_context.taint
+		# 	end
 
-			new_string
-		end
+		# 	new_string
+		# end
 	end
 
 	class TestObject
