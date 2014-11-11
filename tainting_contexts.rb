@@ -99,6 +99,7 @@ describe "Taint context" do
 		y.untaint
 
 		y.tainted?.should == false
+		puts 
 
 		z = y.upcase
 

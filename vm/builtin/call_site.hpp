@@ -24,6 +24,8 @@ namespace rubinius {
   typedef FallbackExecuteFunc* FallbackExecutor;
   typedef CacheUpdateFunc* CacheUpdater;
 
+  // typedef std_unordered_map<std::string, std::string> SymbolToContextMethodMap;
+
   class CallSiteInformation {
   public:
     CallSiteInformation(Executable* e, int i)
@@ -111,9 +113,36 @@ namespace rubinius {
 
     static bool lookup_method_missing(STATE, CallFrame* call_frame, Arguments& args, Dispatch& dis, Object* self, Module* begin);
 
-    Object* execute(STATE, CallFrame* call_frame, Arguments& args) {
 
-      if(args.recv()->is_secure_context_p()) {
+    // SymbolToContextMethodMap sym_to_context_method;
+
+    // sym_to_context_method.insert ({
+    //   { "*", "multiply"}
+    // });
+
+      std::string symbol_translate(STATE, const std::string& meth_name) {
+        if (meth_name == "*") {
+            return "op__multiply";
+        }
+        else if (meth_name == "+") {
+            return "op__plus";
+        }
+        else if (meth_name == "[]") {
+            return "op__index";
+        }
+        else if (meth_name == "%") {
+            return "op__modulo";
+        }
+        else {
+            return meth_name;
+        }
+      }
+
+    Object* execute(STATE, CallFrame* call_frame, Arguments& args) {
+      std::string context_method_name = symbol_translate(state, args.name()->cpp_str(state));
+
+      if(args.recv()->is_secure_context_p() && !(context_method_name == "secure_context" || context_method_name == "secure_context?" || context_method_name == "secure_context=")) {
+
         Object* const recv = args.recv();
         CallFrame* const orig_call_frame = call_frame;
 
@@ -133,8 +162,11 @@ namespace rubinius {
 
         Object* secure_context_object = recv->get_secure_context_prim(state);
 
-        Symbol* before_symbol = state->shared().symbols.lookup(state, "before_" + args.name()->cpp_str(state));
-        Symbol* after_symbol  = state->shared().symbols.lookup(state, "after_" + args.name()->cpp_str(state));
+        std::cerr << "[vm/CallSite#execute] lookup thingy : " << symbol_translate(state, args.name()->cpp_str(state)) << "\n";
+
+
+        Symbol* before_symbol = state->shared().symbols.lookup(state, "before_" + context_method_name);
+        Symbol* after_symbol  = state->shared().symbols.lookup(state, "after_" + context_method_name);
 
         Arguments before_updated_args(args.name());
 

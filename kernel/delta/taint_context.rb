@@ -1,19 +1,61 @@
-class TaintContext < BasicObject
+class TaintContext# < BasicObject
 	attr_accessor :tainted
+
+	# How to best manage aliased methods? E.g. [] vs slice
+
+	@@simple_methods = 	
+			["b", 
+			"byteslice",
+			"capitalize", "center", "chomp", "chop", 
+			"clone",
+			"crypt", "delete", "downcase", "dump", 
+			"dup",
+			"each", # from array
+			"element_set", 
+			"encode",
+			"find_character",
+			"find_string",
+			"find_string_reverse",
+			"gsub", "insert", "ljust", 
+			"lstrip", "modulo", "multiply", "plus",
+			"prepend", "reverse", "rjust", "rstrip", 
+			"slice", 
+			"slice!",
+			"split",
+			"squeeze",
+			"strip", "lstrip", "rstrip",
+			"sub",
+			"substring",
+			"succ", "next",
+			"swapcase",
+			"tr", "tr_s",
+			"transform",
+			"upcase",
+
+			"search_region",
+
+			# regexp methods
+			# "captures",
+			# "pre_match",
+			# "pre_match_from",
+			# "post_match",
+		]
+
+	@@operator_methods = ["multiply", "plus", "index", "modulo"]
 
 	def initialize(tainted)
 		@tainted = tainted
 
 		if @tainted
-			["capitalize", "center", "chomp", "chop", 
-			"crypt", "delete", "downcase", "dump", 
-			"element_set", "gsub", "insert", "ljust", 
-			"lstrip", "modulo", "multiply", "plus", "+", "*",
-			"prepend", "reverse", "rjust", "rstrip",
-			"upcase"].each do |meth|
-				::Kernel.puts "Defining method after_#{meth}"
-				::Kernel.define_singleton_method("after_#{meth}") do |obj, new_string|
-					new_string.taint
+			@@simple_methods.each do |meth|
+				define_singleton_method("after_#{meth}") do |obj, new_string|
+					new_string.taint if not new_string.nil? and not new_string.frozen?
+				end
+			end
+
+			@@operator_methods.each do |meth|
+				define_singleton_method("after_op__#{meth}") do |obj, new_string|
+					new_string.taint if not new_string.nil? and not new_string.frozen?
 				end
 			end
 		end
