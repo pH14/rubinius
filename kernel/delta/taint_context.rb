@@ -21,7 +21,6 @@ class TaintContext# < BasicObject
 			"prepend", "reverse", "rjust", "rstrip", 
 			"slice", 
 			"slice!",
-			"split",
 			"squeeze",
 			"strip", "lstrip", "rstrip",
 			"sub",
@@ -41,6 +40,8 @@ class TaintContext# < BasicObject
 			# "post_match",
 		]
 
+	@@multiparam_methods = ["split"]
+
 	@@operator_methods = ["multiply", "plus", "index", "modulo"]
 
 	def initialize(tainted)
@@ -53,11 +54,23 @@ class TaintContext# < BasicObject
 				end
 			end
 
+			@@multiparam_methods.each do |meth|
+				define_singleton_method("after_#{meth}") do |obj, *args|
+					args.each do |arg|
+						arg.taint if not arg.nil? and not arg.frozen?
+					end
+				end
+			end
+
 			@@operator_methods.each do |meth|
 				define_singleton_method("after_op__#{meth}") do |obj, new_string|
 					new_string.taint if not new_string.nil? and not new_string.frozen?
 				end
 			end
+
+			# define_singleton_method("after_op__modulo") do |obj, new_string|
+			# 	new_string.taint if not new_string.nil? and not new_string.frozen?
+			# end
 		end
 	end
 
