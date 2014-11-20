@@ -1,122 +1,113 @@
-class TaintContext# < BasicObject
-	attr_accessor :tainted
+# class TaintContext
+#     attr_accessor :tainted
 
-	# How to best manage aliased methods? E.g. [] vs slice
+#     @@simple_methods =  
+#             ["b", "byteslice", "capitalize", "center", 
+#              "chomp", "chop", "clone", "crypt", "delete", 
+#              "downcase", "dump", "dup", "element_set",
+#              "encode", "find_character", "find_string",
+#              "find_string_reverse", "gsub", "insert", 
+#              "ljust", "lstrip", "modulo", "multiply", 
+#              "plus", "prepend", "reverse", "rjust", 
+#              "rstrip", "slice", "slice!", "squeeze",
+#              "strip", "sub", "substring", "succ", "next", 
+#              "swapcase", "tr", "tr_s", "transform", 
+#              "upcase", "search_region"]
 
-	@@simple_methods = 	
-			["b", 
-			"byteslice",
-			"capitalize", "center", "chomp", "chop", 
-			"clone",
-			"crypt", "delete", "downcase", "dump", 
-			"dup",
-			"each", # from array
-			"element_set", 
-			"encode",
-			"find_character",
-			"find_string",
-			"find_string_reverse",
-			"gsub", "insert", "ljust", 
-			"lstrip", "modulo", "multiply", "plus",
-			"prepend", "reverse", "rjust", "rstrip", 
-			"slice", 
-			"slice!",
-			"squeeze",
-			"strip", "lstrip", "rstrip",
-			"sub",
-			"substring",
-			"succ", "next",
-			"swapcase",
-			"tr", "tr_s",
-			"transform",
-			"upcase",
+#     @@multiparam_methods = ["split"]
 
-			"search_region",
+#     @@operator_methods = ["multiply", "plus", "index", "modulo"]
 
-			# regexp methods
-			# "captures",
-			# "pre_match",
-			# "pre_match_from",
-			# "post_match",
-		]
+#     def initialize(tainted)
+#         @tainted = tainted
 
-	@@multiparam_methods = ["split"]
+#         if @tainted
+#             @@simple_methods.each do |meth|
+#                 define_singleton_method("after_#{meth}") do |obj, new_string|
+#                     new_string.taint if not new_string.nil? and not new_string.frozen?
+#                 end
+#             end
 
-	@@operator_methods = ["multiply", "plus", "index", "modulo"]
+#             @@multiparam_methods.each do |meth|
+#                 define_singleton_method("after_#{meth}") do |obj, *args|
+#                     args.each do |arg|
+#                         arg.taint if not arg.nil? and not arg.frozen?
+#                     end
+#                 end
+#             end
 
-	def initialize(tainted)
-		@tainted = tainted
+#             @@operator_methods.each do |meth|
+#                 define_singleton_method("after_op__#{meth}") do |obj, new_string|
+#                     new_string.taint if not new_string.nil? and not new_string.frozen?
+#                 end
+#             end
+#         end
+#     end
 
-		if @tainted
-			@@simple_methods.each do |meth|
-				define_singleton_method("after_#{meth}") do |obj, new_string|
-					new_string.taint if not new_string.nil? and not new_string.frozen?
-				end
-			end
+#     def infect(other)
+#         other.taint
+#     end
+# end
 
-			@@multiparam_methods.each do |meth|
-				define_singleton_method("after_#{meth}") do |obj, *args|
-					args.each do |arg|
-						arg.taint if not arg.nil? and not arg.frozen?
-					end
-				end
-			end
+# module Kernel
+#     def taint
+#         self.secure_context = SecurityManager::TaintedContext if not tainted?
+#         self
+#     end
 
-			@@operator_methods.each do |meth|
-				define_singleton_method("after_op__#{meth}") do |obj, new_string|
-					new_string.taint if not new_string.nil? and not new_string.frozen?
-				end
-			end
+#     def tainted?
+#         if not secure_context?
+#             return false
+#         end
 
-			# define_singleton_method("after_op__modulo") do |obj, new_string|
-			# 	new_string.taint if not new_string.nil? and not new_string.frozen?
-			# end
-		end
-	end
+#         self.secure_context == SecurityManager::TaintedContext
+#     end
 
-	def infect(other)
-		other.taint
-	end
+#     def untaint
+#         self.secure_context = SecurityManager::UntaintedContext
+#         self
+#     end
 
-end
+#     module SecurityManager
+#         TaintedContext = TaintContext.new(tainted=true)
+#         UntaintedContext = TaintContext.new(tainted=false)
+#     end
+# end
 
-module Kernel
-	def taint
-		self.secure_context = SecurityManager::TaintedContext if not tainted?
-		self
-	end
+# class String
+#     alias_method :old_modulo, :%
 
-	def tainted?
-		if not secure_context?
-			return false
-		end
+#     def %(*args)
+#         ret = old_modulo *args
 
-		self.secure_context == SecurityManager::TaintedContext
-	end
+#         unless %w(%e %E %f %g %G).include? self
+#           if self.eql? '%p'
+#             args.each do |arg|
+#               Rubinius::Type.infect ret, arg.inspect
+#             end
+#           else
+#             args.each do |arg|
+#               Rubinius::Type.infect ret, arg
+#             end
+#           end
+#         end
 
-	def untaint
-		self.secure_context = SecurityManager::UntaintedContext
-		self
-	end
+#         ret
+#     end
+# end
 
-	module SecurityManager
-		TaintedContext = TaintContext.new(tainted=true)
-		UntaintedContext = TaintContext.new(tainted=false)
-	end
-end
+# module Rubinius
+#     module Type
+#         class << self
+#             alias_method :old_infect, :infect
 
-module Rubinius
-	module Type
-		class << self
-			alias_method :old_infect, :infect
+#             def infect(host, source)
+#                 if source.secure_context?
+#                     source.secure_context.infect host
+#                 end
 
-			def infect(host, source)
-				if source.secure_context?
-					source.secure_context.infect host
-				end
-
-				old_infect(host, source)
-			end
-		end
-	end
-end
+#                 old_infect(host, source)
+#             end
+#         end
+#     end
+# end
