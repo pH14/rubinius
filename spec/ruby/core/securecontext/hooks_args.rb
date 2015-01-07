@@ -179,4 +179,31 @@ describe "Secure context" do
 
 		x.no_args_method.should == 10
 	end
+
+	# Note : make sure to test cases where the hooked method is a runtime defined method, since it's
+	# a BlockEnvironment rather than CompiledCode, and the VM hooks depend on Compiled at the moment..
+
+	it "passes args and blocks straight through" do
+		class TestObject
+			def check_all_args_and_block_method(*args, &block)
+				args.each_with_index do |i, arg|
+					arg.should == i
+					::Kernel.puts "Yay it matched! #{i} == #{arg}"
+				end
+
+				block.call == "great success!"
+			end
+		end
+
+		x = TestObject.new
+
+		x.secure_context = SecureContextSpecs::SecureContext.new
+		x.secure_context.define_singleton_method(:before_check_all_args_and_block_method) do |obj, *args, &block|
+			block.hook_block
+			return *args, block
+		end
+
+		random_block = Proc.new { "great success!" }
+		x.check_all_args_and_block_method(0, 1, 2, 3, 4, 5, 6, 7, 8, &random_block).should == true
+	end
 end
