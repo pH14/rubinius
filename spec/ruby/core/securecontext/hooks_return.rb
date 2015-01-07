@@ -49,4 +49,19 @@ describe "Secure context" do
 
 		x.returns_many_values.should == ["returned string", 10]
 	end
+
+	it "hooks properly with split" do
+		x = "a.b.c"
+		x.secure_context = SecureContextSpecs::SecureContext.new
+
+		x.secure_context.define_singleton_method(:after_split) do |obj, *args|
+			args.count.should == 3
+			::Kernel.puts "hey what's up, #{args}"
+
+			args
+		end
+
+		x.split(".").should == ["a", "b", "c"]
+		x.taint.split(".").should == ["a", "b", "c"]
+	end
 end

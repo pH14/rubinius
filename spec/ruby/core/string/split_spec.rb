@@ -154,12 +154,30 @@ describe "String#split with String" do
   end
 
   it "taints the resulting strings if self is tainted" do
+    x = "x.y.z."
+    x.split(".").should == ["x", "y", "z"]
+
+    "x.y.z.".split(".").should == ["x", "y", "z"]
+
+    x = "x.y.z."
+    x.taint
+    x.split(".").should == ["x", "y", "z"]
+
+    "x.y.z.".taint.split(".").should == ["x", "y", "z"]
+
+    puts "Check dis out: #{"x.y.z.".taint.split(".")}"
+
     ["", "x.y.z.", "  x  y  "].each do |str|
       ["", ".", " "].each do |pat|
         [-1, 0, 1, 2].each do |limit|
+          puts "Tainted string: #{str.dup.taint}, tainted string split: #{str.dup.taint.split(pat)}"
+          puts "Untainted string: #{str.dup}, untainted string split: #{str.dup.split(pat)}"
+
           str.dup.taint.split(pat).each do |x|
             x.tainted?.should == true
           end
+
+          str.dup.taint.split(pat).count.should == str.dup.split(pat).count
 
           str.split(pat.dup.taint).each do |x|
             x.tainted?.should == false

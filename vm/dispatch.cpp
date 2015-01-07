@@ -32,6 +32,9 @@ namespace rubinius {
         else if (meth_name == "%") {
             return "op__modulo";
         }
+        else if (meth_name == "<<") {
+            return "op__concat";
+        }
         else {
             return meth_name;
         }

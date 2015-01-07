@@ -431,7 +431,11 @@ describe "String#slice! with String" do
       str = str.dup
       strs.each do |other|
         other = other.dup
+
+        puts "r is slice! of (#{str}, #{str.tainted?}) with (#{other}, #{other.tainted?})"
+
         r = str.slice!(other)
+        puts "-- should be !r.nil? = #{!r.nil?} & other.tainted? = #{other.tainted?} = #{!r.nil? & other.tainted?}"
 
         r.tainted?.should == !r.nil? & other.tainted?
       end

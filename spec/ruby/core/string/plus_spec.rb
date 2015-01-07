@@ -38,6 +38,7 @@ describe "String#+" do
 
     strs.each do |str|
       strs.each do |other|
+        puts "Trying to taint between #{str}, #{str.tainted?} and #{other}, #{other.tainted?}. Result #{(str + other).tainted?}"
         (str + other).tainted?.should == (str.tainted? | other.tainted?)
       end
     end

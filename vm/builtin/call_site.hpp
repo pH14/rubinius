@@ -133,6 +133,9 @@ namespace rubinius {
         else if (meth_name == "%") {
             return "op__modulo";
         }
+        else if (meth_name == "<<") {
+            return "op__concat";
+        }
         else {
             return meth_name;
         }
@@ -244,7 +247,7 @@ namespace rubinius {
 
           return secure_context_object->send(state, call_frame, after_symbol, after_updated_args.as_array(state), after_updated_args.block(), true);
         } else {
-          std::cerr << "[vm/CallSite#execute] Context does _not_ have post-hook for call site! " << this->name()->cpp_str(state) << "\n";
+          // std::cerr << "[vm/CallSite#execute] Context does _not_ have post-hook for call site! " << this->name()->cpp_str(state) << "!!!!\n";
           return proxy_method_return_args;
         }
       }
