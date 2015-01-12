@@ -424,6 +424,8 @@ describe "String#slice! with String" do
   end
 
   it "taints resulting strings when other is tainted" do
+    "".taint.slice!("").tainted?.should == false
+    
     strs = ["", "hello world", "hello"]
     strs += strs.map { |s| s.dup.taint }
 
@@ -436,6 +438,10 @@ describe "String#slice! with String" do
 
         r = str.slice!(other)
         puts "-- should be !r.nil? = #{!r.nil?} & other.tainted? = #{other.tainted?} = #{!r.nil? & other.tainted?}"
+
+        if r.tainted? != (!r.nil? & other.tainted?)
+          puts "GOING TO FAIL CASE OF (#{str}, #{str.tainted?}) with (#{other}, #{other.tainted?})"
+        end
 
         r.tainted?.should == !r.nil? & other.tainted?
       end

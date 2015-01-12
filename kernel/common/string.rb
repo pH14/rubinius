@@ -127,7 +127,7 @@ class String
       elsif index.kind_of? Regexp
         match, str = subpattern(index, other)
         Regexp.last_match = match
-        Regexp.propagate_last_match
+        # Regexp.propagate_last_match
         return str
       else
         length = Rubinius::Type.coerce_to(other, Fixnum, :to_int)
@@ -140,7 +140,7 @@ class String
     when Regexp
       match_data = index.search_region(self, 0, @num_bytes, true)
       Regexp.last_match = match_data
-      Regexp.propagate_last_match
+      # Regexp.propagate_last_match
       if match_data
         result = match_data.to_s
         Rubinius::Type.infect result, index

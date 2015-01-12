@@ -6,7 +6,9 @@ class TaintContext
             	"byteslice", 
             	"capitalize", "center", 
              "chomp", "chop", "clone", "crypt", "delete", 
-             "downcase", "dump", "dup", "element_set",
+             "downcase", "dump", 
+             "dup", 
+             "element_set",
              "encode", 
              # These find_* methods are potentially problematic with hooks...
              # they are also rbx-specific. are they necessary here?
@@ -17,17 +19,22 @@ class TaintContext
              "ljust", "lstrip", "modulo", "multiply", 
              "plus", "prepend", "reverse", "rjust", 
              "rstrip", 
-             # "slice", 
-             # "slice!", 
-             "substring",
+             "slice", 
+             "slice!", 
+             # "substring",
              "squeeze",
-             "strip", "sub", "substring", "succ", "next", 
+             "strip", "sub", 
+             # "substring", 
+             "succ", "next", 
              "swapcase", "tr", "tr_s", "transform", 
              "upcase", 
+             #regexp
              "search_region",
              "match_start",
              "search_from",
-             "last_match"
+             "last_match",
+             #array
+             # "pack"
          	]
 
     @@multiparam_methods = ["split"]
@@ -40,53 +47,58 @@ class TaintContext
         if @tainted
             @@simple_methods.each do |meth|
                 define_singleton_method("after_#{meth}") do |obj, arg|
-                    if arg.is_a? TrueClass or arg.is_a? FalseClass
-                        return arg
-                    end
-
                     arg.taint if not arg.nil? and not arg.frozen?
                 end
             end
 
             @@multiparam_methods.each do |meth|
-                define_singleton_method("after_#{meth}") do |obj, *args|
-                	# puts "Trying to deal with post-hook for #{args}"
+                define_singleton_method("after_#{meth}") do |obj, args|
+                	# if args.is_a? Enumerable
+	                #     args.each do |arg|
+	                #         arg.taint if not arg.nil? and not arg.frozen?
+	                #     end
 
-                    args.each do |arg|
-                    	# puts "Post-hook for #{meth} with arg #{arg}"
-                        if arg.is_a? TrueClass or arg.is_a? FalseClass
-                            next
-                        end
+	                #     return args
+                	# else
+                	# 	args.taint
+                	# end
+            		unless (obj.is_a? Enumerable or obj == "")
+            			if args.is_a? Enumerable
+		                    args.each do |arg|
+		                        arg.taint if not arg.nil? and not arg.frozen?
+		                    end
+		                else
+		                	args.taint if not args.nil? and not args.frozen?
+		                end
+	                end
 
-                        arg.taint if not arg.nil? and not arg.frozen?
-                    end
-
-                    # ::Kernel.puts "Handling the post-hook for object #{args}"
-
-                	# args.taint if not args.frozen?
-
-                    if args.count == 1
-                    	return args#0]
-                    else
-                    	return args
-                    end
+                    return args
                 end
             end
 
             @@operator_methods.each do |meth|
-                define_singleton_method("after_op__#{meth}") do |obj, arg|
-                    if arg.is_a? TrueClass or arg.is_a? FalseClass
-                        return arg
-                    end
+                define_singleton_method("after_op__#{meth}") do |obj, args|
+                	puts "after_op__#{meth}: Args has elements. #{args.tainted?}"
 
-                    arg.taint if not arg.nil? and not arg.frozen?
+            		unless (obj.is_a? Enumerable or obj == "")
+            			if args.is_a? Enumerable
+		                    args.each do |arg|
+		                        arg.taint if not arg.nil? and not arg.frozen?
+		                    end
+		                else
+		                	args.taint if not args.nil? and not args.frozen?
+		                end
+	                end
+
+                    return args
                 end
             end
         end
     end
 
     def infect(other)
-        other.taint
+    	puts "Want to infect #{other}!!!!!!!!!!!!!!!!!!!"
+        other.taint 
     end
 end
 
@@ -96,6 +108,7 @@ module Kernel
             return self
         end
 
+        puts "Tainting #{self}"
         self.secure_context = SecurityManager::TaintedContext if not tainted?
         self
     end
@@ -109,13 +122,12 @@ module Kernel
     end
 
     def untaint
-        self.secure_context = SecurityManager::UntaintedContext
+        self.secure_context = nil#SecurityManager::UntaintedContext
         self
     end
 
     module SecurityManager
         TaintedContext = TaintContext.new(tainted=true)
-        UntaintedContext = TaintContext.new(tainted=false)
     end
 end
 
@@ -140,28 +152,46 @@ class String
         ret
     end
 
-    alias_method :old_slice, :slice
-    def slice(one, two=undefined)
-    	if one.is_a? String and one.tainted?
-	    	ret = old_slice(one, two)
+    # alias_method :old_slice, :slice
+    # alias_method :old_slice, :[]
+    # def [](one, two=undefined)
+    # 	# puts "NEW SLICE GETTING CALLED #########################################################################"
+    # 	if one.is_a? String and one.tainted?
+	   #  	ret = old_slice(one, two)
 
-    		if !ret.nil?
-	    		Rubinius::Type.infect ret, one
-	    	end
+    # 		if !ret.nil?
+	   #  		Rubinius::Type.infect ret, one
+	   #  	end
 
-	    	ret
-	    elsif one.is_a? Regexp
-	    	ret = old_slice(one, two)	
+	   #  	ret
+	   #  elsif one.is_a? Regexp
+	   #  	ret = old_slice(one, two)	
 
-	    	if self.tainted? or one.tainted? and !ret.nil?
-	    		ret.taint
-	    	end
+	   #  	if self.tainted? or one.tainted? and !ret.nil?
+	   #  		ret.taint
+	   #  	end
 
-	    	ret
-    	else
-    		old_slice(one, two)
-    	end
-    end
+	   #  	ret
+    # 	else
+    # 		old_slice(one, two)
+    # 	end
+    # end
+end
+
+class Array
+	alias_method :old_pack, :pack
+
+	def pack(directives)
+		ret = old_pack directives
+
+		self.each do |a|
+			Rubinius::Type.infect ret, a
+		end
+
+		Rubinius::Type.infect ret, directives
+
+		ret
+	end
 end
 
 module Rubinius
