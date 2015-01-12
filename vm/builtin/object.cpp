@@ -606,7 +606,12 @@ namespace rubinius {
 
   Object* Object::set_secure_context_prim(STATE, Object* val) {
     check_frozen(state);
-    set_secure_context(1);
+
+    if (val->nil_p()) {
+      set_secure_context(0);
+    } else {
+      set_secure_context(1);
+    }
 
     // std::cerr << "[set_secure_context_prim] Set secure context\n";
     return set_ivar(state, G(sym_secure_context), val);

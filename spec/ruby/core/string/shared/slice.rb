@@ -414,7 +414,11 @@ describe :string_slice_string, :shared => true do
 
     strs.each do |str|
       strs.each do |other|
+        puts "r is slice! of (#{str}, #{str.tainted?}) with (#{other}, #{other.tainted?}). Method #{@method} #{@method.inspect}"
+
         r = str.send(@method, other)
+
+        puts "-- should be !r.nil? = #{!r.nil?} & other.tainted? = #{other.tainted?} = #{!r.nil? & other.tainted?}"
 
         r.tainted?.should == !r.nil? & other.tainted?
       end

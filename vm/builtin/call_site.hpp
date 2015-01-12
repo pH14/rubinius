@@ -236,7 +236,7 @@ namespace rubinius {
 
 
         if (CBOOL(secure_context_object->respond_to(state, after_symbol, cTrue))) {
-          std::cerr << "[vm/CallSite#execute] Context does have post-hook for call site " << this->name()->cpp_str(state) << "\n";
+          std::cerr << "[vm/CallSite#execute] Context does have post-hook for call site \n";// << this->name()->cpp_str(state) << "\n";
 
           if (! proxy_method_return_args) {
             std::cerr << "[vm/CallSite#execute] No returned values from original methods\n";
@@ -256,19 +256,20 @@ namespace rubinius {
     }
 
 
+    // This takes the return from the actual method call and turns it into the input for the post-hook
     Arguments arguments_from_proxy_method(STATE, Arguments& args, Object* proxy_method_return_args, Object* recv) {
-      if (Array* each_hooked_arg = try_as<Array>(proxy_method_return_args)) {
-        std::cerr << "[vm/CallSite#execute] Call site's args were an array " << each_hooked_arg << "\n";
+      // if (Array* each_hooked_arg = try_as<Array>(proxy_method_return_args)) {
+      //   std::cerr << "[vm/CallSite#execute] Call site's args were an array " << each_hooked_arg << "\n";
 
-        Array* caller_array = Array::create(state, 1);
-        caller_array->append(state, recv);
+      //   Array* caller_array = Array::create(state, 1);
+      //   caller_array->append(state, recv);
 
-        Arguments arguments(args.name(), each_hooked_arg);
-        arguments.set_recv(args.recv());
-        arguments.prepend(state, caller_array);
+      //   Arguments arguments(args.name(), each_hooked_arg);
+      //   arguments.set_recv(args.recv());
+      //   arguments.prepend(state, caller_array);
 
-        return arguments;
-      } else {
+      //   return arguments;
+      // } else {
         std::cerr << "[vm/CallSite#execute] Call site's args were just one arg " << proxy_method_return_args->to_string(state, true) << "\n";
 
         Tuple* args_tuple = Tuple::from(state, 2, recv, proxy_method_return_args);
@@ -277,7 +278,7 @@ namespace rubinius {
         arguments.set_recv(args.recv());
         arguments.use_tuple(args_tuple, 2);
         return arguments;
-      }
+      // }
     }
 
 

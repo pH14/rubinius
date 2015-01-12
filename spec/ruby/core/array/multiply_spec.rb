@@ -91,6 +91,8 @@ describe "Array#* with an integer" do
   it "copies the taint status of the original array even if the passed count is 0" do
     ary = [1, 2, 3]
     ary.taint
+    puts ary.tainted?
+    puts (ary * 0), (ary * 0).tainted?
     (ary * 0).tainted?.should == true
   end
 

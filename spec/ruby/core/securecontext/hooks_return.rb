@@ -30,7 +30,7 @@ describe "Secure context" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
 
-		x.secure_context.define_singleton_method(:after_returns_many_values) do |obj, *arg|
+		x.secure_context.define_singleton_method(:after_returns_many_values) do |obj, arg|
 			arg.should == [10, "hello", 20, "world", 30]
 			return "returned string"
 		end
@@ -42,7 +42,7 @@ describe "Secure context" do
 		x = SecureContextSpecs::TestObject.new
 		x.secure_context = SecureContextSpecs::SecureContext.new
 
-		x.secure_context.define_singleton_method(:after_returns_many_values) do |obj, *arg|
+		x.secure_context.define_singleton_method(:after_returns_many_values) do |obj, arg|
 			arg.should == [10, "hello", 20, "world", 30]
 			return "returned string", 10
 		end
@@ -54,11 +54,10 @@ describe "Secure context" do
 		x = "a.b.c"
 		x.secure_context = SecureContextSpecs::SecureContext.new
 
-		x.secure_context.define_singleton_method(:after_split) do |obj, *args|
-			args.count.should == 3
-			::Kernel.puts "hey what's up, #{args}"
+		x.secure_context.define_singleton_method(:after_split) do |obj, arg|
+			arg.count.should == 3
 
-			args
+			arg
 		end
 
 		x.split(".").should == ["a", "b", "c"]
