@@ -5,6 +5,12 @@ class TaintContext
             ["b", 
             	"byteslice", 
             	"capitalize", "center", 
+
+                # Rails, SafeBuffer
+                "concat",
+                "safe_concat",
+                "initialize_copy",
+
              "chomp", "chop", "clone", "crypt", "delete", 
              "downcase", "dump", 
              "dup", 
@@ -20,7 +26,7 @@ class TaintContext
              "plus", "prepend", "reverse", "rjust", 
              "rstrip", 
              "slice", 
-             "slice!", 
+             # "slice!", 
              # "substring",
              "squeeze",
              "strip", "sub", 
@@ -33,20 +39,79 @@ class TaintContext
              "match_start",
              "search_from",
              "last_match",
+             "to_f",
+             "to_a",
+             "to_s",
+             "to_str",
+             # "inspect"
              #array
              # "pack"
          	]
 
     @@multiparam_methods = ["split"]
 
-    @@operator_methods = ["multiply", "plus", "index", "modulo", "concat"]
+    @@operator_methods   = ["multiply", # *
+                            "divide",   # /
+                            "plus",     # +
+                            "minus",    # -
+                            "modulo",   # %
+                            "not",      # !
+                            "gt",       # >
+                            "lt",       # <
+                            "gte",      # >=
+                            "lte",      # <=
+                            "backtick", # `
+                            "invert",   # ~
+                            # "equals",   # ==
+                            "not_equals", # !=
+                            "similar",  # ===
+                            "match",    # =~
+                            "comparison", # <=>
+                            "lshift",   # <<
+                            "rshift",   # >>
+                            "index",    # []
+                            "element_assignment", # []=
+                            "bitwise_and", # &
+                            "bitwise_or",  # |
+                            "bitwise_xor", # ^
+                            "exponent",    # **
+                            "uplus",       # +@
+                            "uminus"]      # -@
 
     def initialize(tainted)
         @tainted = tainted
 
         if @tainted
+            # define_singleton_method("before_slice") do |obj, one, two|
+            #     if one.nil?
+            # end
+            # define_singleton_method("after_slice") do |obj, arg|
+            #     if not arg.nil?
+            #         arg
+            #     else
+            #         arg.taint
+            #     end
+            # end
+            define_singleton_method("before_join") do |obj, *params|
+                params.each do |p|
+                    if p.tainted?
+                        puts "******** TAINTING FROM JOIN HOOK"
+                        obj.taint
+                        break
+                    end
+                end
+
+                return params
+            end
+
             @@simple_methods.each do |meth|
                 define_singleton_method("after_#{meth}") do |obj, arg|
+                    if obj.is_a? Array
+                        if obj.empty?
+                            return arg
+                        end
+                    end
+
                     arg.taint if not arg.nil? and not arg.frozen?
                 end
             end
@@ -62,7 +127,7 @@ class TaintContext
                 	# else
                 	# 	args.taint
                 	# end
-            		unless (obj.is_a? Enumerable or obj == "")
+            		unless obj.is_a? Enumerable
             			if args.is_a? Enumerable
 		                    args.each do |arg|
 		                        arg.taint if not arg.nil? and not arg.frozen?
@@ -78,9 +143,8 @@ class TaintContext
 
             @@operator_methods.each do |meth|
                 define_singleton_method("after_op__#{meth}") do |obj, args|
-                	puts "after_op__#{meth}: Args has elements. #{args.tainted?}"
-
-            		unless (obj.is_a? Enumerable or obj == "")
+                	# puts "after_op__#{meth}: Args has elements. #{args.tainted?}"
+            		unless obj.is_a? Enumerable
             			if args.is_a? Enumerable
 		                    args.each do |arg|
 		                        arg.taint if not arg.nil? and not arg.frozen?
@@ -97,19 +161,27 @@ class TaintContext
     end
 
     def infect(other)
-    	puts "Want to infect #{other}!!!!!!!!!!!!!!!!!!!"
+    	# puts "Want to infect #{other}!!!!!!!!!!!!!!!!!!!"
         other.taint 
     end
 end
 
 module Kernel
     def taint
-        if self.is_a? TrueClass or self.is_a? FalseClass
+        if is_a? TrueClass or is_a? FalseClass or is_a? NilClass
             return self
         end
 
-        puts "Tainting #{self}"
-        self.secure_context = SecurityManager::TaintedContext if not tainted?
+        if tainted? or frozen? or nil?
+            return self
+        end
+
+        # puts "Tainting #{self}. Class : #{self.class} Nil? : #{nil?}"
+        # puts "Tainting a #{self.class}, #{self}"
+        self.secure_context = SecurityManager::TaintedContext
+
+        # puts "Tainting a #{self.class}. Is tainted now? #{self.tainted?}"
+
         self
     end
 
@@ -122,6 +194,14 @@ module Kernel
     end
 
     def untaint
+        if is_a? TrueClass or is_a? FalseClass or is_a? NilClass
+            return self
+        end
+
+        if frozen?
+            return self
+        end
+
         self.secure_context = nil#SecurityManager::UntaintedContext
         self
     end

@@ -84,9 +84,15 @@ class String
   end
 
   def +(other)
-    other = StringValue(other)
-    Rubinius::Type.compatible_encoding self, other
-    String.new(self) << other
+    # other = StringValue(other)
+    # Rubinius::Type.compatible_encoding self, other
+    # String.new(self) << other
+
+    String.new(self) << StringValue(other)
+  end
+
+  def self.interpolate_join(*s)
+    s.join ""
   end
 
   def ==(other)
