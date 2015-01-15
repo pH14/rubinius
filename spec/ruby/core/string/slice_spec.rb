@@ -437,7 +437,7 @@ describe "String#slice! with String" do
         puts "r is slice! of (#{str}, #{str.tainted?}) with (#{other}, #{other.tainted?})"
 
         r = str.slice!(other)
-        puts "-- should be !r.nil? = #{!r.nil?} & other.tainted? = #{other.tainted?} = #{!r.nil? & other.tainted?}"
+        puts "-- should be !r.nil? = #{!r.nil?} & other.tainted? = #{other.tainted?} => #{!r.nil? & other.tainted?}. Actually #{r.tainted?}"
 
         if r.tainted? != (!r.nil? & other.tainted?)
           puts "GOING TO FAIL CASE OF (#{str}, #{str.tainted?}) with (#{other}, #{other.tainted?})"

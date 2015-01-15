@@ -20,6 +20,10 @@ class BasicObject
     self == other ? false : true
   end
 
+  def interpolate_join(*s)
+    s.join ''
+  end
+
   # Send message to object with given arguments.
   #
   # Ignores visibility of method, and may therefore be used to

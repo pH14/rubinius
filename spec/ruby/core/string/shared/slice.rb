@@ -418,7 +418,11 @@ describe :string_slice_string, :shared => true do
 
         r = str.send(@method, other)
 
-        puts "-- should be !r.nil? = #{!r.nil?} & other.tainted? = #{other.tainted?} = #{!r.nil? & other.tainted?}"
+        puts "-- should be !r.nil? = #{!r.nil?} & other.tainted? = #{other.tainted?} => #{!r.nil? & other.tainted?}"
+        
+        if r.tainted? != (!r.nil? & other.tainted?)
+          puts "GOING TO FAIL CASE OF (#{str}, #{str.tainted?}) with (#{other}, #{other.tainted?})"
+        end
 
         r.tainted?.should == !r.nil? & other.tainted?
       end
