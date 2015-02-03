@@ -20,8 +20,19 @@ class BasicObject
     self == other ? false : true
   end
 
-  def interpolate_join(*s)
-    s.join ''
+  def self.interpolate_join(*s)
+    # puts "BASIC OBJECT INTERP JOIN BEING RUN"
+    x = s.join ''
+
+    if not x.tainted?
+      s.each do |str|
+        if str.tainted?
+          return x.taint
+        end
+      end
+    end
+
+    x
   end
 
   # Send message to object with given arguments.

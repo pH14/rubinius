@@ -92,7 +92,22 @@ class String
   end
 
   def self.interpolate_join(*s)
-    s.join ""
+    # puts "interpolating #{s}"
+    # s.each do |str|
+    #   puts "- #{str} tainted" if str.tainted?
+    # end
+
+    x = s.join ""
+
+    if not x.tainted?
+      s.each do |str|
+        if str.tainted?
+          return x.taint
+        end
+      end
+    end
+
+    x
   end
 
   def ==(other)
@@ -153,6 +168,7 @@ class String
         return result
       end
     when String
+      # puts "Just trying a simple string check for string #{self}, index #{index}"
       return include?(index) ? index.dup : nil
     when Range
       start   = Rubinius::Type.coerce_to index.first, Fixnum, :to_int
@@ -1327,6 +1343,7 @@ class String
     if undefined.equal?(two)
       result = slice(one)
 
+      # puts "Results from slice! of #{one} are tainted. #{result}" if result.tainted?
       if one.kind_of? Regexp
         lm = Regexp.last_match
         self[one] = '' if result
@@ -1345,7 +1362,7 @@ class String
         self[one, two] = '' if result
       end
     end
-
+    
     result
   end
 

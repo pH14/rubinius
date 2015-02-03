@@ -147,6 +147,24 @@ class String
 
   alias_method :length, :size
 
+  # def self.interpolate_join(*s)
+  #   # s.each do |str|
+  #   #   puts "- #{str} tainted" if str.tainted?
+  #   # end
+
+  #   x = s.join ""
+
+  #   if not x.tainted?
+  #     s.each do |str|
+  #       if str.tainted?
+  #         return x.taint
+  #       end
+  #     end
+  #   end
+
+  #   x
+  # end
+
   # This is a work-in-progress. String is entirely coded around the idea of
   # bytes, but we have to convert to the idea of characters, even for 1.8
   # mode, where UTF-8, EUC, and SJIS will be represented properly as encoded

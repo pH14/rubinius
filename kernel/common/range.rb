@@ -180,7 +180,12 @@ class Range
   end
 
   def inspect
-    "#{@begin.inspect}#{@excl ? "..." : ".."}#{@end.inspect}"
+    # NOTE: at this point String.interpolate_join hasn't been 
+    # set so it defaults back on to string_build. Either fix the
+    # bytecode change, or just live with changing any interp before
+    # the interp_join is written
+    # "#{@begin.inspect}#{@excl ? "..." : ".."}#{@end.inspect}"
+    [@begin.inspect, @excl ? "..." : "..", @end.inspect].join ''
   end
 
   def last(n=undefined)
@@ -279,7 +284,8 @@ class Range
   end
 
   def to_s
-    "#{@begin}#{@excl ? "..." : ".."}#{@end}"
+    # "#{@begin}#{@excl ? "..." : ".."}#{@end}"
+    [@begin, @excl ? "..." : "..", @end].join ''
   end
 
   def to_a

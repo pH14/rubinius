@@ -159,6 +159,11 @@ class Regexp
     pos = pos < 0 ? pos + str.size : pos
     pos = m.character_to_byte_index pos
     result = search_region(str, pos, str.bytesize, true)
+
+    if result.respond_to? :propagate_taint
+      result.propagate_taint self, str
+    end
+
     Regexp.last_match = result
 
     if result && block_given?
@@ -568,6 +573,11 @@ class Regexp
 end
 
 class MatchData
+
+  def propagate_taint(regexp, str)
+    @regexp.taint if regexp.tainted?
+    @source.taint if str.tainted?
+  end
 
   def begin(idx)
     if idx == 0
