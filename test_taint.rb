@@ -104,11 +104,11 @@ require 'pp'
 # # end
 
 # # puts y
-class String
-	def self.interpolate_join(*s)
-		return s.join ''
-	end
-end
+# class String
+# 	def self.interpolate_join(*s)
+# 		return s.join ''
+# 	end
+# end
 
 x = "key"
 y = "hello, world".taint
@@ -116,3 +116,5 @@ z = %(#{x}="#{y}")
 
 puts z, z.class
 puts z.tainted? == true
+
+$'

@@ -36,7 +36,7 @@ namespace rubinius {
     bool resolve(STATE, Symbol* name, LookupData& lookup);
     std::string symbol_translate(STATE, const std::string& meth_name);
   private:
-    Arguments arguments_from_proxy_method(STATE, Arguments& args, Object* proxy_method_return_args, Object* recv);
+    Arguments arguments_from_proxy_method(STATE, Arguments& args, Object* proxy_method_return_args, Object* recv, Object* before_method_args);
     void arguments_from_call(STATE, Object* returned_args, Arguments& original_args, Arguments& updated_args, CompiledCode* compiled_code);
   };
 }

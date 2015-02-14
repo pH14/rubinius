@@ -25,7 +25,7 @@ class TaintContext
              "ljust", "lstrip", "modulo", "multiply", 
              "plus", "prepend", "reverse", "rjust", 
              "rstrip", 
-             "slice", 
+             # "slice", 
              # "slice!", 
              # "substring",
              "squeeze",
@@ -35,7 +35,7 @@ class TaintContext
              "swapcase", "tr", "tr_s", "transform", 
              "upcase", 
              #regexp
-             "search_region",
+             # "search_region",
              "match_start",
              "search_from",
              "last_match",
@@ -46,9 +46,15 @@ class TaintContext
              # "inspect"
              #array
              # "pack"
+
+             # regexp
+             "match",
+             # "pre_match",
+             # "post_match",
+             # "StringValue",
          	]
 
-    @@multiparam_methods = ["split"]
+    @@multiparam_methods = ["split"]#, "subpattern"]
 
     @@operator_methods   = ["multiply", # *
                             "divide",   # /
@@ -82,75 +88,70 @@ class TaintContext
         @tainted = tainted
 
         if @tainted
-            # define_singleton_method("before_slice") do |obj, one, two|
-            #     if one.nil?
-            # end
-            # define_singleton_method("after_slice") do |obj, arg|
-            #     if not arg.nil?
-            #         arg
-            #     else
-            #         arg.taint
-            #     end
-            # end
-            define_singleton_method("before_join") do |obj, *params|
-                params.each do |p|
-                    if p.tainted?
-                        puts "******** TAINTING FROM JOIN HOOK"
-                        obj.taint
-                        break
-                    end
+            # This doesn't yet cover when slice returns several arguments, not just one
+            define_singleton_method("after_slice") do |obj, arg, method_args|
+              case method_args[0]
+              when String
+                if method_args[0].tainted? and not arg.nil?
+                  arg.taint
                 end
+              else
+                arg.taint
+              end
 
-                return params
+              return arg
             end
 
             @@simple_methods.each do |meth|
-                define_singleton_method("after_#{meth}") do |obj, arg|
+                define_singleton_method("after_#{meth}") do |obj, arg, method_args|
                     if obj.is_a? Array
                         if obj.empty?
                             return arg
                         end
                     end
 
-                    arg.taint if not arg.nil? and not arg.frozen?
+                    # Range should not pass on taint to its to_s, unless the
+                    # begin or ending strings of it are tainted. The Range object
+                    # itself shouldn't pass it on.
+                    if meth == "to_s"
+                      if obj.is_a? Range and not arg.tainted?
+                        return arg
+                      end
+
+                      if obj.is_a? Hash and obj.empty?
+                        return arg
+                      end
+                    end
+
+                    arg.taint
                 end
             end
 
             @@multiparam_methods.each do |meth|
-                define_singleton_method("after_#{meth}") do |obj, args|
-                	# if args.is_a? Enumerable
-	                #     args.each do |arg|
-	                #         arg.taint if not arg.nil? and not arg.frozen?
-	                #     end
-
-	                #     return args
-                	# else
-                	# 	args.taint
-                	# end
-            		unless obj.is_a? Enumerable
-            			if args.is_a? Enumerable
-		                    args.each do |arg|
-		                        arg.taint if not arg.nil? and not arg.frozen?
-		                    end
-		                else
-		                	args.taint if not args.nil? and not args.frozen?
-		                end
+                define_singleton_method("after_#{meth}") do |obj, args, method_args|
+              		unless obj.is_a? Enumerable
+              		  	if args.is_a? Enumerable
+  		                    args.each do |arg|
+  		                        arg.taint
+  		                    end
+  		                else
+  		                	args.taint
+  		                end
 	                end
 
-                    return args
+                  return args
                 end
             end
 
             @@operator_methods.each do |meth|
-                define_singleton_method("after_op__#{meth}") do |obj, args|
-                	# puts "after_op__#{meth}: Args has elements. #{args.tainted?}"
-            		unless obj.is_a? Enumerable
+                define_singleton_method("after_op__#{meth}") do |obj, args, method_args|
+            		if not obj.is_a? Enumerable
             			if args.is_a? Enumerable
 		                    args.each do |arg|
-		                        arg.taint if not arg.nil? and not arg.frozen?
+		                        arg.taint
 		                    end
 		                else
-		                	args.taint if not args.nil? and not args.frozen?
+		                	args.taint
 		                end
 	                end
 
@@ -161,7 +162,6 @@ class TaintContext
     end
 
     def infect(other)
-    	# puts "Want to infect #{other}!!!!!!!!!!!!!!!!!!!"
         other.taint 
     end
 end
@@ -176,12 +176,7 @@ module Kernel
             return self
         end
 
-        # puts "Tainting #{self}. Class : #{self.class} Nil? : #{nil?}"
-        # puts "Tainting a #{self.class}, #{self}"
         self.secure_context = SecurityManager::TaintedContext
-
-        # puts "Tainting a #{self.class}. Is tainted now? #{self.tainted?}"
-
         self
     end
 
@@ -202,7 +197,7 @@ module Kernel
             return self
         end
 
-        self.secure_context = nil#SecurityManager::UntaintedContext
+        self.secure_context = nil
         self
     end
 
@@ -231,31 +226,6 @@ class String
 
         ret
     end
-
-    # alias_method :old_slice, :slice
-    # alias_method :old_slice, :[]
-    # def [](one, two=undefined)
-    # 	# puts "NEW SLICE GETTING CALLED #########################################################################"
-    # 	if one.is_a? String and one.tainted?
-	   #  	ret = old_slice(one, two)
-
-    # 		if !ret.nil?
-	   #  		Rubinius::Type.infect ret, one
-	   #  	end
-
-	   #  	ret
-	   #  elsif one.is_a? Regexp
-	   #  	ret = old_slice(one, two)	
-
-	   #  	if self.tainted? or one.tainted? and !ret.nil?
-	   #  		ret.taint
-	   #  	end
-
-	   #  	ret
-    # 	else
-    # 		old_slice(one, two)
-    # 	end
-    # end
 end
 
 class Array
@@ -280,7 +250,7 @@ module Rubinius
             alias_method :old_infect, :infect
 
             def infect(host, source)
-                if source.secure_context?
+                if source.respond_to? :secure_context? and source.secure_context?
                     source.secure_context.infect host
                 end
 

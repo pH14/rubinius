@@ -106,7 +106,7 @@ namespace rubinius {
         }
       }
 
-  Arguments Dispatch::arguments_from_proxy_method(STATE, Arguments& args, Object* proxy_method_return_args, Object* recv) {
+  Arguments Dispatch::arguments_from_proxy_method(STATE, Arguments& args, Object* proxy_method_return_args, Object* recv, Object* before_updated_args) {
     // if (Array* each_hooked_arg = try_as<Array>(proxy_method_return_args)) {
     //   std::cerr << "[vm/CallSite#execute] Call site's args were an array " << each_hooked_arg << "\n";
 
@@ -121,11 +121,11 @@ namespace rubinius {
     // } else {
       // std::cerr << "[vm/CallSite#execute] Call site's args were just one arg " << proxy_method_return_args->to_string(state, true) << "\n";
 
-      Tuple* args_tuple = Tuple::from(state, 2, recv, proxy_method_return_args);
+      Tuple* args_tuple = Tuple::from(state, 3, recv, proxy_method_return_args, before_updated_args);
 
       Arguments arguments(args.name());
       arguments.set_recv(args.recv());
-      arguments.use_tuple(args_tuple, 2);
+      arguments.use_tuple(args_tuple, 3);
       return arguments;
     // }
   }
@@ -333,7 +333,7 @@ namespace rubinius {
             return secure_context_object->send(state, call_frame, after_symbol, true);
           }
 
-          Arguments after_updated_args = arguments_from_proxy_method(state, args, proxy_method_return_args, recv);
+          Arguments after_updated_args = arguments_from_proxy_method(state, args, proxy_method_return_args, recv, before_updated_args.as_array(state));
 
           return secure_context_object->send(state, call_frame, after_symbol, after_updated_args.as_array(state), after_updated_args.block(), true);
         } else {

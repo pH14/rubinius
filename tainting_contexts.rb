@@ -23,7 +23,7 @@ class TaintContext
 
         if @tainted
             @@simple_methods.each do |meth|
-                define_singleton_method("after_#{meth}") do |obj, new_string|
+                define_singleton_method("after_#{meth}") do |obj, new_string, method_args|
                     if new_string.is_a? TrueClass or new_string.is_a? FalseClass
                         return new_string
                     end
@@ -33,7 +33,7 @@ class TaintContext
             end
 
             @@multiparam_methods.each do |meth|
-                define_singleton_method("after_#{meth}") do |obj, *args, &block|
+                define_singleton_method("after_#{meth}") do |obj, args, method_args|
                     args.each do |arg|
                         if arg.is_a? TrueClass or arg.is_a? FalseClass
                             next
@@ -51,7 +51,7 @@ class TaintContext
             end
 
             @@operator_methods.each do |meth|
-                define_singleton_method("after_op__#{meth}") do |obj, *args, &block|
+                define_singleton_method("after_op__#{meth}") do |obj, args, method_args|
                     # ::Kernel.puts "Trying to taint #{new_string}"
                     args.each do |arg|
                         if arg.is_a? TrueClass or arg.is_a? FalseClass
